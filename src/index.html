@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Optimizer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 AI Optimizer</h1>
+      <p class="subtitle">Save 20-40% on OpenAI API costs</p>
+    </header>
+
+    <main>
+      <!-- License Section -->
+      <section id="license-section">
+        <h2>License Activation</h2>
+        
+        <div id="license-form">
+          <label for="license-key">License Key:</label>
+          <input 
+            type="text" 
+            id="license-key" 
+            placeholder="SAAS-XXXXXXXX-XXXXXXXX"
+            autocomplete="off"
+          />
+          
+          <button id="activate-btn">Activate</button>
+          <button id="validate-btn" style="display:none;">Validate</button>
+        </div>
+
+        <div id="license-status" class="status-box" style="display:none;">
+          <div class="status-indicator" id="status-indicator"></div>
+          <div class="status-text">
+            <strong id="status-text">Inactive</strong>
+            <p id="status-email"></p>
+            <p id="last-checked"></p>
+          </div>
+        </div>
+
+        <div id="message" class="message" style="display:none;"></div>
+      </section>
+
+      <!-- API Key Section (shown after license activated) -->
+      <section id="api-section" style="display:none;">
+        <h2>OpenAI API Key</h2>
+        
+        <div id="api-form">
+          <label for="api-key">API Key:</label>
+          <input 
+            type="password" 
+            id="api-key" 
+            placeholder="sk-..."
+            autocomplete="off"
+          />
+          
+          <button id="save-api-btn">Save</button>
+        </div>
+
+        <div id="api-status" class="status-box" style="display:none;">
+          <div class="status-indicator active"></div>
+          <div class="status-text">
+            <strong>API Key Configured</strong>
+            <p>Ready to optimize your requests</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Info Section -->
+      <section id="info-section">
+        <h3>How It Works</h3>
+        <ol>
+          <li>Enter your license key (from welcome email)</li>
+          <li>Activate license (validates with server)</li>
+          <li>Enter your OpenAI API key</li>
+          <li>All requests are optimized automatically</li>
+          <li>Save 20-40% on API costs!</li>
+        </ol>
+      </section>
+    </main>
+
+    <footer>
+      <p>Version <span id="version">1.0.0</span> | AI Optimizer</p>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

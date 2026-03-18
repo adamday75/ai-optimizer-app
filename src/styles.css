@@ -1,0 +1,214 @@
+/* src/styles.css - AI Optimizer UI */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 1.1em;
+  opacity: 0.9;
+}
+
+main {
+  padding: 30px;
+}
+
+section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+section h2 {
+  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.3em;
+}
+
+section h3 {
+  color: #555;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-weight: 500;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 1em;
+  margin-bottom: 15px;
+  transition: border-color 0.3s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.status-box {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: white;
+  border-radius: 6px;
+  margin-top: 15px;
+  border-left: 4px solid #ddd;
+}
+
+.status-box.active {
+  border-left-color: #48bb78;
+  background: #f0fff4;
+}
+
+.status-box.inactive {
+  border-left-color: #f56565;
+  background: #fff5f5;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #f56565;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.status-indicator.active {
+  background: #48bb78;
+}
+
+.status-text {
+  flex: 1;
+}
+
+.status-text strong {
+  display: block;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.status-text p {
+  color: #666;
+  font-size: 0.9em;
+  margin: 3px 0;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 15px;
+  display: none;
+}
+
+.message.success {
+  background: #f0fff4;
+  color: #22543d;
+  border: 1px solid #c6f6d5;
+}
+
+.message.error {
+  background: #fff5f5;
+  color: #742a2a;
+  border: 1px solid #febcbc;
+}
+
+#info-section ol {
+  margin-left: 20px;
+  color: #555;
+  line-height: 1.8;
+}
+
+#info-section li {
+  margin-bottom: 8px;
+}
+
+footer {
+  background: #f8f9fa;
+  padding: 15px 30px;
+  text-align: center;
+  color: #666;
+  font-size: 0.9em;
+  border-top: 1px solid #eee;
+}
+
+/* Loading spinner */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(102, 126, 234, 0.3);
+  border-radius: 50%;
+  border-top-color: #667eea;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
