@@ -9,6 +9,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   validateLicense: (key) => ipcRenderer.invoke('validate-license', key),
   getLicenseState: () => ipcRenderer.invoke('get-license-state'),
   
+  // API key management
+  saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
+  loadApiKey: () => ipcRenderer.invoke('load-api-key'),
+  
   // App info
   getVersion: () => process.env.npm_package_version,
   

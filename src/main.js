@@ -125,3 +125,40 @@ ipcMain.handle('validate-license', async (event, licenseKey) => {
 ipcMain.handle('get-license-state', () => {
   return licenseState;
 });
+
+// Save API key to local storage
+function saveApiKey(apiKey) {
+  const configPath = path.join(app.getPath('userData'), 'api-key.json');
+  try {
+    fs.writeFileSync(configPath, JSON.stringify({
+      apiKey,
+      savedAt: new Date().toISOString()
+    }));
+    return true;
+  } catch (err) {
+    console.error('Error saving API key:', err);
+    return false;
+  }
+}
+
+// Load API key from local storage
+function loadApiKey() {
+  const configPath = path.join(app.getPath('userData'), 'api-key.json');
+  try {
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error('Error loading API key:', err);
+  }
+  return null;
+}
+
+ipcMain.handle('save-api-key', async (event, apiKey) => {
+  return saveApiKey(apiKey);
+});
+
+ipcMain.handle('load-api-key', async () => {
+  return loadApiKey();
+});

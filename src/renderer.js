@@ -32,6 +32,13 @@ async function init() {
   if (state.isValid) {
     showLicenseActive(state);
     apiSection.style.display = 'block';
+    
+    // Load saved API key
+    const savedApiKey = await window.electronAPI.loadApiKey();
+    if (savedApiKey && savedApiKey.apiKey) {
+      apiKeyInput.value = savedApiKey.apiKey;
+      apiStatus.style.display = 'flex';
+    }
   }
   
   // Set version
@@ -116,19 +123,13 @@ async function handleSaveApiKey() {
     return;
   }
   
-  // In v1.0, just store it (v2.0 will use it for optimization)
-  const configPath = require('path').join(require('electron').remote.app.getPath('userData'), 'api-key.json');
-  const fs = require('fs');
+  // Save via IPC handler
+  const saved = await window.electronAPI.saveApiKey(apiKey);
   
-  try {
-    fs.writeFileSync(configPath, JSON.stringify({
-      apiKey,
-      savedAt: new Date().toISOString()
-    }));
-    
+  if (saved) {
     apiStatus.style.display = 'flex';
-    showMessage('API key saved!', 'success');
-  } catch (err) {
+    showMessage('API key saved! ✅', 'success');
+  } else {
     showMessage('Failed to save API key', 'error');
   }
 }
