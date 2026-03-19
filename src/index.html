@@ -68,6 +68,28 @@
         </div>
       </section>
 
+      <!-- Proxy Server Section (V2) -->
+      <section id="proxy-section" style="display:none;">
+        <h2>🔧 Proxy Server</h2>
+        
+        <div id="proxy-controls">
+          <button id="start-proxy-btn">▶ Start</button>
+          <button id="stop-proxy-btn" style="display:none;">⏹ Stop</button>
+          <span id="proxy-status-text" style="margin-left: 10px;">Stopped</span>
+        </div>
+
+        <div id="proxy-stats" class="status-box" style="display:none;">
+          <div class="status-indicator active"></div>
+          <div class="status-text">
+            <strong>Proxy Running</strong>
+            <p>Port: <span id="proxy-port">3000</span></p>
+            <p>Requests: <span id="proxy-requests">0</span></p>
+            <p>Cache Hits: <span id="proxy-cache-hits">0</span> (<span id="proxy-cache-rate">0</span>%)</p>
+            <p>Total Saved: $<span id="proxy-saved">0.00</span></p>
+          </div>
+        </div>
+      </section>
+
       <!-- Info Section -->
       <section id="info-section">
         <h3>How It Works</h3>

@@ -16,6 +16,18 @@ const saveApiBtn = document.getElementById('save-api-btn');
 const apiStatus = document.getElementById('api-status');
 const versionSpan = document.getElementById('version');
 
+// Proxy Section Elements (V2)
+const proxySection = document.getElementById('proxy-section');
+const startProxyBtn = document.getElementById('start-proxy-btn');
+const stopProxyBtn = document.getElementById('stop-proxy-btn');
+const proxyStatusText = document.getElementById('proxy-status-text');
+const proxyStats = document.getElementById('proxy-stats');
+const proxyPort = document.getElementById('proxy-port');
+const proxyRequests = document.getElementById('proxy-requests');
+const proxyCacheHits = document.getElementById('proxy-cache-hits');
+const proxyCacheRate = document.getElementById('proxy-cache-rate');
+const proxySaved = document.getElementById('proxy-saved');
+
 // Initialize
 async function init() {
   // Load saved license
@@ -57,6 +69,7 @@ function showLicenseActive(state) {
   activateBtn.style.display = 'none';
   validateBtn.style.display = 'inline-block';
   apiSection.style.display = 'block';
+  proxySection.style.display = 'block'; // Show proxy section (V2)
 }
 
 // Show license inactive state
@@ -134,10 +147,83 @@ async function handleSaveApiKey() {
   }
 }
 
+// Start Proxy Server
+async function handleStartProxy() {
+  startProxyBtn.disabled = true;
+  startProxyBtn.textContent = 'Starting...';
+  
+  const result = await window.electronAPI.startProxy(3000);
+  
+  if (result.success) {
+    startProxyBtn.style.display = 'none';
+    stopProxyBtn.style.display = 'inline-block';
+    proxyStatusText.textContent = 'Running';
+    proxyStats.style.display = 'flex';
+    proxyPort.textContent = result.port;
+    showMessage('Proxy server started!', 'success');
+    updateProxyStats(); // Initial stats
+  } else {
+    startProxyBtn.disabled = false;
+    startProxyBtn.textContent = '▶ Start';
+    showMessage(`Failed to start: ${result.error}`, 'error');
+  }
+}
+
+// Stop Proxy Server
+async function handleStopProxy() {
+  stopProxyBtn.disabled = true;
+  stopProxyBtn.textContent = 'Stopping...';
+  
+  const result = await window.electronAPI.stopProxy();
+  
+  if (result.success) {
+    stopProxyBtn.style.display = 'none';
+    startProxyBtn.style.display = 'inline-block';
+    startProxyBtn.disabled = false;
+    startProxyBtn.textContent = '▶ Start';
+    proxyStatusText.textContent = 'Stopped';
+    proxyStats.style.display = 'none';
+    showMessage('Proxy server stopped', 'success');
+  } else {
+    stopProxyBtn.disabled = false;
+    stopProxyBtn.textContent = '⏹ Stop';
+    showMessage(`Failed to stop: ${result.error}`, 'error');
+  }
+}
+
+// Update proxy stats display
+async function updateProxyStats() {
+  const status = await window.electronAPI.getProxyStatus();
+  if (status.isRunning && status.stats) {
+    proxyRequests.textContent = status.stats.requests;
+    proxyCacheHits.textContent = status.stats.cacheHits;
+    const rate = status.stats.requests > 0 
+      ? ((status.stats.cacheHits / status.stats.requests) * 100).toFixed(1) 
+      : '0';
+    proxyCacheRate.textContent = rate;
+    proxySaved.textContent = status.stats.totalSaved.toFixed(4);
+  }
+}
+
+// Poll stats every 5 seconds when running
+let statsInterval = null;
+function startStatsPolling() {
+  if (statsInterval) clearInterval(statsInterval);
+  statsInterval = setInterval(updateProxyStats, 5000);
+}
+function stopStatsPolling() {
+  if (statsInterval) {
+    clearInterval(statsInterval);
+    statsInterval = null;
+  }
+}
+
 // Event Listeners
 activateBtn.addEventListener('click', handleLicense);
 validateBtn.addEventListener('click', handleLicense);
 saveApiBtn.addEventListener('click', handleSaveApiKey);
+startProxyBtn.addEventListener('click', handleStartProxy);
+stopProxyBtn.addEventListener('click', handleStopProxy);
 
 // Initialize on load
 init();

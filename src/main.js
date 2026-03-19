@@ -16,6 +16,13 @@ let licenseState = {
   lastChecked: null
 };
 
+// Proxy server state
+const proxyServer = require('./proxy/server.js');
+let proxyState = {
+  isRunning: false,
+  port: 3000
+};
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -124,6 +131,38 @@ ipcMain.handle('validate-license', async (event, licenseKey) => {
 
 ipcMain.handle('get-license-state', () => {
   return licenseState;
+});
+
+// Proxy Server IPC Handlers
+ipcMain.handle('start-proxy', async (event, port = 3000) => {
+  try {
+    const started = await proxyServer.startServer(port);
+    proxyState.isRunning = started;
+    proxyState.port = port;
+    return { success: started, port };
+  } catch (error) {
+    console.error('Failed to start proxy:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('stop-proxy', async () => {
+  try {
+    const stopped = await proxyServer.stopServer();
+    proxyState.isRunning = !stopped;
+    return { success: stopped };
+  } catch (error) {
+    console.error('Failed to stop proxy:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-proxy-status', () => {
+  return {
+    isRunning: proxyServer.getStatus(),
+    port: proxyState.port,
+    stats: proxyServer.getStats()
+  };
 });
 
 // Save API key to local storage
