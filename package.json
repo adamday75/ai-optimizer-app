@@ -31,10 +31,7 @@
     "publish": null,
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": [
-        "dmg",
-        "zip"
-      ]
+      "target": ["zip"]
     },
     "win": {
       "target": [
