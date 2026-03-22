@@ -14,17 +14,26 @@ let stats = {
 // Lazy initialization - only create client when needed
 let openaiClient = null;
 
-// Get API key from Electron app storage
+// Get API key from Electron app storage (or env var for standalone)
 function getApiKey() {
-  const configPath = path.join(require('electron').app.getPath('userData'), 'api-key.json');
+  // Try env var first (for standalone testing)
+  if (process.env.OPENAI_API_KEY) {
+    return process.env.OPENAI_API_KEY;
+  }
+  
+  // Try Electron app storage
   try {
-    if (fs.existsSync(configPath)) {
-      const data = fs.readFileSync(configPath, 'utf8');
-      const config = JSON.parse(data);
-      return config.apiKey;
+    const electron = require('electron');
+    if (electron && electron.app) {
+      const configPath = path.join(electron.app.getPath('userData'), 'api-key.json');
+      if (fs.existsSync(configPath)) {
+        const data = fs.readFileSync(configPath, 'utf8');
+        const config = JSON.parse(data);
+        return config.apiKey;
+      }
     }
   } catch (err) {
-    console.error('Error loading API key:', err);
+    console.error('Error loading API key from Electron:', err);
   }
   return null;
 }

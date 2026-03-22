@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+    }
+    h2 {
+      margin: 0 0 15px 0;
+      font-size: 18px;
+      color: #333;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .stat-label {
+      color: #666;
+    }
+    .stat-value {
+      font-weight: bold;
+      color: #333;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .status.running {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.stopped {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .savings {
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      text-align: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>🚀 AI Optimizer</h2>
+  
+  <div id="status" class="status stopped">Checking...</div>
+  
+  <div class="stat">
+    <span class="stat-label">Requests:</span>
+    <span class="stat-value" id="requests">-</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Cache Hits:</span>
+    <span class="stat-value" id="cache-hits">-</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Hit Rate:</span>
+    <span class="stat-value" id="hit-rate">-</span>
+  </div>
+  
+  <div class="savings">
+    💰 Total Saved: <span id="total-saved">$0.00</span>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

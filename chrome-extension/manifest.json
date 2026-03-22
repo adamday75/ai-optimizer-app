@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "AI Optimizer Proxy",
+  "version": "2.0.0",
+  "description": "Route OpenAI API calls through AI Optimizer proxy for caching and cost savings",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://chat.openai.com/*",
+    "http://localhost:3000/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

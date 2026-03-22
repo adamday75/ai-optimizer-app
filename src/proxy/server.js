@@ -30,7 +30,7 @@ async function startServer(port = 3000) {
     res.json(stats);
   });
 
-  // OpenAI proxy endpoint
+  // OpenAI proxy endpoints
   app.post('/v1/chat/completions', async (req, res) => {
     try {
       const response = await processChatCompletion(req.body);
@@ -39,6 +39,26 @@ async function startServer(port = 3000) {
       console.error('Proxy error:', error);
       res.status(500).json({ error: error.message });
     }
+  });
+
+  // New OpenAI responses API (for Codex/new CLI)
+  app.post('/v1/responses', async (req, res) => {
+    try {
+      console.log('📝 Responses API called');
+      // For now, proxy to OpenAI directly (no caching for responses)
+      const openai = getOpenAI();
+      const response = await openai.request(req.body);
+      res.json(response);
+    } catch (error) {
+      console.error('Responses API error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Also handle GET /responses (WebSocket fallback)
+  app.get('/responses', (req, res) => {
+    console.log('⚠️ GET /responses not supported - use POST');
+    res.status(405).json({ error: 'Method not allowed' });
   });
 
   return new Promise((resolve, reject) => {
