@@ -66,6 +66,12 @@ function showLicenseActive(state) {
   statusText.textContent = 'License Active';
   statusEmail.textContent = state.email || '';
   lastChecked.textContent = `Last checked: ${new Date(state.lastChecked).toLocaleString()}`;
+  
+  // Show device count if available
+  if (state.deviceCount !== undefined) {
+    lastChecked.textContent += ` | Devices: ${state.deviceCount}/${state.deviceLimit} (${state.plan})`;
+  }
+  
   activateBtn.style.display = 'none';
   validateBtn.style.display = 'inline-block';
   apiSection.style.display = 'block';
@@ -162,6 +168,7 @@ async function handleStartProxy() {
     proxyPort.textContent = result.port;
     showMessage('Proxy server started!', 'success');
     updateProxyStats(); // Initial stats
+    startStatsPolling(); // Start auto-refresh every 2 seconds
   } else {
     startProxyBtn.disabled = false;
     startProxyBtn.textContent = '▶ Start';
@@ -183,6 +190,7 @@ async function handleStopProxy() {
     startProxyBtn.textContent = '▶ Start';
     proxyStatusText.textContent = 'Stopped';
     proxyStats.style.display = 'none';
+    stopStatsPolling(); // Stop auto-refresh
     showMessage('Proxy server stopped', 'success');
   } else {
     stopProxyBtn.disabled = false;
@@ -205,11 +213,11 @@ async function updateProxyStats() {
   }
 }
 
-// Poll stats every 5 seconds when running
+// Poll stats every 2 seconds when running (live updates for demo)
 let statsInterval = null;
 function startStatsPolling() {
   if (statsInterval) clearInterval(statsInterval);
-  statsInterval = setInterval(updateProxyStats, 5000);
+  statsInterval = setInterval(updateProxyStats, 2000); // 2 second polling for live demo
 }
 function stopStatsPolling() {
   if (statsInterval) {

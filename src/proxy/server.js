@@ -1,6 +1,15 @@
 // Proxy Server - Express wrapper for OpenAI proxy
 const express = require('express');
-const { processChatCompletion, getStats, resetStats } = require('./openai.js');
+const { processChatCompletion, getStats, resetStats, getOpenAI } = require('./openai.js');
+const fs = require('fs');
+const path = require('path');
+
+// Log file for debugging
+const logFile = path.join(__dirname, '../../proxy-debug.log');
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
+}
 
 let server = null;
 let isRunning = false;
@@ -55,10 +64,72 @@ async function startServer(port = 3000) {
     }
   });
 
+  // Codex uses /responses (without /v1 prefix)
+  app.post('/responses', async (req, res) => {
+    try {
+      console.log('📝 Codex /responses endpoint called');
+      const openai = getOpenAI();
+      const response = await openai.request(req.body);
+      res.json(response);
+    } catch (error) {
+      console.error('Codex /responses error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Also handle GET /responses (WebSocket fallback)
   app.get('/responses', (req, res) => {
     console.log('⚠️ GET /responses not supported - use POST');
     res.status(405).json({ error: 'Method not allowed' });
+  });
+
+  // ChatGPT.com backend API - forward all requests to real backend
+  // This catches /backend-api/* paths that the extension intercepts
+  app.use('/backend-api/', async (req, res) => {
+    try {
+      const path = req.originalUrl; // e.g., /backend-api/gizmos/...
+      const https = require('https');
+      const http = require('http');
+      
+      console.log('🔄 Forwarding ChatGPT backend request:', path);
+      logToFile(`🔄 Forwarding: ${path} (method: ${req.method})`);
+      
+      const url = new URL(path, 'https://chatgpt.com');
+      const lib = url.protocol === 'https:' ? https : http;
+      
+      const options = {
+        hostname: url.hostname,
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
+        path: url.pathname + url.search,
+        method: req.method,
+        headers: {
+          ...req.headers,
+          host: url.hostname,
+          'Content-Length': undefined // Let Node.js calculate this
+        }
+      };
+      
+      const proxyReq = lib.request(options, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+      
+      proxyReq.on('error', (err) => {
+        console.error('Proxy request error:', err);
+        logToFile(`❌ Error: ${err.message}`);
+        res.status(500).json({ error: err.message });
+      });
+      
+      if (req.body && Object.keys(req.body).length > 0) {
+        proxyReq.write(JSON.stringify(req.body));
+      }
+      
+      proxyReq.end();
+    } catch (error) {
+      console.error('ChatGPT backend proxy error:', error);
+      logToFile(`❌ Error: ${error.message}`);
+      res.status(500).json({ error: error.message });
+    }
   });
 
   return new Promise((resolve, reject) => {

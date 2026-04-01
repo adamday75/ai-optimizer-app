@@ -40,6 +40,11 @@ module.exports.getCached = function (key) {
  * @param {number} ttl - Time to live in seconds (optional)
  */
 module.exports.setCached = function (key, response, ttl) {
+  if (ttl) {
+    cache.set(key, response, ttl);
+  } else {
+    cache.set(key, response);
+  }
 }
 
 /**

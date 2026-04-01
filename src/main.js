@@ -90,10 +90,13 @@ function saveLicense(licenseKey) {
 // Validate license with API
 async function validateLicense(licenseKey) {
   try {
+    // Generate device fingerprint
+    const deviceFingerprint = generateDeviceFingerprint();
+    
     const response = await fetch(LICENSE_API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ licenseKey })
+      body: JSON.stringify({ licenseKey, deviceFingerprint })
     });
     
     const data = await response.json();
@@ -103,12 +106,27 @@ async function validateLicense(licenseKey) {
         isValid: true,
         licenseKey,
         email: data.email,
-        lastChecked: new Date().toISOString()
+        lastChecked: new Date().toISOString(),
+        deviceCount: data.deviceCount,
+        deviceLimit: data.deviceLimit,
+        plan: data.plan
       };
-      return { valid: true, email: data.email };
+      return { 
+        valid: true, 
+        email: data.email,
+        deviceCount: data.deviceCount,
+        deviceLimit: data.deviceLimit,
+        plan: data.plan
+      };
     } else {
       licenseState = { isValid: false, licenseKey: null, email: null, lastChecked: null };
-      return { valid: false, reason: data.reason || 'Invalid license' };
+      return { 
+        valid: false, 
+        reason: data.reason || 'Invalid license',
+        deviceCount: data.deviceCount,
+        deviceLimit: data.deviceLimit,
+        message: data.message
+      };
     }
   } catch (error) {
     console.error('License validation error:', error);
@@ -194,10 +212,33 @@ function loadApiKey() {
   return null;
 }
 
+// Generate device fingerprint
+function generateDeviceFingerprint() {
+  const crypto = require('crypto');
+  const os = require('os');
+  
+  // Combine multiple device identifiers
+  const fingerprintData = JSON.stringify({
+    hostname: os.hostname(),
+    platform: os.platform(),
+    arch: os.arch(),
+    cpus: os.cpus()[0]?.model,
+    totalMem: os.totalmem(),
+    uptime: os.uptime()
+  });
+  
+  // Create SHA256 hash
+  return crypto.createHash('sha256').update(fingerprintData).digest('hex');
+}
+
 ipcMain.handle('save-api-key', async (event, apiKey) => {
   return saveApiKey(apiKey);
 });
 
 ipcMain.handle('load-api-key', async () => {
   return loadApiKey();
+});
+
+ipcMain.handle('generate-device-fingerprint', async () => {
+  return generateDeviceFingerprint();
 });

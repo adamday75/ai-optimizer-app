@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveLicense: (key) => ipcRenderer.invoke('save-license', key),
   validateLicense: (key) => ipcRenderer.invoke('validate-license', key),
   getLicenseState: () => ipcRenderer.invoke('get-license-state'),
+  generateDeviceFingerprint: () => ipcRenderer.invoke('generate-device-fingerprint'),
   
   // API key management
   saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),

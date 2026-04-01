@@ -21,6 +21,18 @@ function getApiKey() {
     return process.env.OPENAI_API_KEY;
   }
   
+  // Try local config file (for standalone testing)
+  try {
+    const localConfigPath = path.join(__dirname, '../../api-key.json');
+    if (fs.existsSync(localConfigPath)) {
+      const data = fs.readFileSync(localConfigPath, 'utf8');
+      const config = JSON.parse(data);
+      return config.apiKey;
+    }
+  } catch (err) {
+    console.error('Error loading API key from local config:', err);
+  }
+  
   // Try Electron app storage
   try {
     const electron = require('electron');

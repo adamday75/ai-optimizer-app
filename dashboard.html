@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Optimizer - Live Stats</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 0.9rem;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 30px;
+    }
+    
+    .status.online {
+      background: #10b981;
+      color: white;
+    }
+    
+    .status.offline {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      color: #666;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .hit-rate {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .hit-rate .stat-value {
+      color: white;
+    }
+    
+    .hit-rate .stat-label {
+      color: rgba(255,255,255,0.9);
+    }
+    
+    .last-updated {
+      color: #999;
+      font-size: 0.8rem;
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .error {
+      background: #fef2f2;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    
+    .refresh-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      width: 100%;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    
+    .refresh-btn:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 AI Optimizer</h1>
+    <p class="subtitle">Live Cache Statistics</p>
+    
+    <div id="status" class="status online">● Online</div>
+    
+    <div id="error" class="error"></div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="requests">-</div>
+        <div class="stat-label">Total Requests</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-value" id="cacheHits">-</div>
+        <div class="stat-label">Cache Hits</div>
+      </div>
+      
+      <div class="stat-card hit-rate">
+        <div class="stat-value" id="hitRate">-</div>
+        <div class="stat-label">Hit Rate %</div>
+      </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="fetchStats()">🔄 Refresh Now</button>
+    
+    <div class="last-updated">
+      Last updated: <span id="lastUpdated">Never</span>
+    </div>
+  </div>
+  
+  <script>
+    async function fetchStats() {
+      try {
+        const response = await fetch('http://localhost:3000/stats');
+        if (!response.ok) throw new Error('Optimizer not responding');
+        
+        const data = await response.json();
+        
+        document.getElementById('requests').textContent = data.requests || 0;
+        document.getElementById('cacheHits').textContent = data.cacheHits || 0;
+        
+        const hitRate = data.requests > 0 
+          ? Math.round((data.cacheHits / data.requests) * 100) 
+          : 0;
+        document.getElementById('hitRate').textContent = hitRate + '%';
+        
+        document.getElementById('status').className = 'status online';
+        document.getElementById('status').textContent = '● Online';
+        document.getElementById('error').style.display = 'none';
+        
+        const now = new Date();
+        document.getElementById('lastUpdated').textContent = now.toLocaleTimeString();
+        
+      } catch (error) {
+        document.getElementById('status').className = 'status offline';
+        document.getElementById('status').textContent = '● Offline';
+        document.getElementById('error').textContent = '⚠️ Optimizer not running on port 3000. Start it first!';
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+    
+    // Auto-refresh every 5 seconds
+    setInterval(fetchStats, 5000);
+    
+    // Initial fetch
+    fetchStats();
+  </script>
+</body>
+</html>

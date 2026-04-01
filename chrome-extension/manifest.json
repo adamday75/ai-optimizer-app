@@ -8,11 +8,13 @@
   ],
   "host_permissions": [
     "https://chat.openai.com/*",
+    "https://chatgpt.com/*",
+    "https://platform.openai.com/*",
     "http://localhost:3000/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"],
+      "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*", "https://platform.openai.com/*"],
       "js": ["content.js"],
       "run_at": "document_start"
     }
