@@ -14,6 +14,56 @@ function logToFile(message) {
 let server = null;
 let isRunning = false;
 
+// License validation function (injected from main.js)
+let isLicenseValidFn = null;
+
+/**
+ * Set the license validation function
+ * @param {Function} fn - Function that returns true if license is valid
+ */
+function setLicenseValidator(fn) {
+  isLicenseValidFn = fn;
+  logToFile('🔐 License validator registered');
+}
+
+/**
+ * Middleware to validate license before allowing API access
+ */
+function requireValidLicense(req, res, next) {
+  // Skip license check for health and stats endpoints
+  if (req.path === '/health' || req.path === '/stats') {
+    return next();
+  }
+
+  // Check if license validator is set
+  if (!isLicenseValidFn) {
+    console.warn('⚠️  No license validator set - allowing request');
+    logToFile('⚠️  Request allowed - no validator configured');
+    return next();
+  }
+
+  // Validate license
+  try {
+    const isValid = isLicenseValidFn();
+    
+    if (!isValid) {
+      console.warn('🚫 Blocked request - invalid or missing license');
+      logToFile(`🚫 BLOCKED: ${req.method} ${req.path} - Invalid license`);
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        message: 'Valid license required. Please activate your license to use this feature.' 
+      });
+    }
+    
+    logToFile(`✅ License validated - ${req.method} ${req.path}`);
+    next();
+  } catch (error) {
+    console.error('License validation error:', error);
+    logToFile(`❌ License validation error: ${error.message}`);
+    res.status(500).json({ error: 'License validation failed' });
+  }
+}
+
 /**
  * Start the proxy server
  * @param {number} port - Port to listen on
@@ -28,18 +78,21 @@ async function startServer(port = 3000) {
   const app = express();
   app.use(express.json());
 
-  // Health check endpoint
+  // Apply license validation middleware to all routes
+  app.use(requireValidLicense);
+
+  // Health check endpoint (exempt from license check via middleware logic)
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', running: true });
   });
 
-  // Stats endpoint (for UI)
+  // Stats endpoint (exempt from license check via middleware logic)
   app.get('/stats', (req, res) => {
     const stats = getStats();
     res.json(stats);
   });
 
-  // OpenAI proxy endpoints
+  // OpenAI proxy endpoints - NOW PROTECTED BY LICENSE CHECK
   app.post('/v1/chat/completions', async (req, res) => {
     try {
       const response = await processChatCompletion(req.body);
@@ -181,5 +234,6 @@ module.exports = {
   startServer,
   stopServer,
   getStatus,
-  getStats
+  getStats,
+  setLicenseValidator
 };

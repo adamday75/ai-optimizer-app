@@ -23,6 +23,21 @@ let proxyState = {
   port: 3000
 };
 
+// Logging helper for debugging
+const logFile = path.join(__dirname, '../proxy-debug.log');
+function logToFile(message) {
+  try {
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
+  } catch (err) {
+    console.error('Failed to write to log:', err);
+  }
+}
+
+// Register license validator with proxy server
+proxyServer.setLicenseValidator(() => licenseState.isValid);
+logToFile('🔐 License validator registered with proxy server');
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
