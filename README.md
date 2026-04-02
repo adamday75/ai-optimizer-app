@@ -39,9 +39,18 @@ AI Optimizer sits between your apps and OpenAI's API:
 
 ## 📥 Installation
 
-### Mac
+### Mac — Choose Your Version
 
-1. Download `AI Optimizer-2.1.0-mac.zip` from [Releases](https://github.com/adamday75/ai-optimizer-app/releases/tag/v2.1.0-security-patch)
+**Which Mac do you have?**
+
+- **Intel Mac (2006-2020):** Download `ai-optimizer-macOS-latest.zip`
+- **Apple Silicon M1/M2/M3 (2020+):** Download `ai-optimizer-arm64-macOS-latest.zip`
+
+*Not sure? Click Apple logo → About This Mac → Check "Processor" (Intel) or "Chip" (Apple Silicon)*
+
+**Install Steps:**
+
+1. Download the correct version for your Mac from [Releases](https://github.com/adamday75/ai-optimizer-app/releases/tag/v2.1.0-security-patch)
 2. Unzip the file
 3. Move `AI Optimizer.app` to your Applications folder
 4. **Remove quarantine** (required for Mac):
@@ -49,7 +58,7 @@ AI Optimizer sits between your apps and OpenAI's API:
    xattr -r -d com.apple.quarantine /Applications/AI\ Optimizer.app
    ```
    *Tip: Type the command up to `quarantine`, then drag the app from Finder into Terminal to auto-fill the path.*
-5. Open the app
+5. Open the app ✅
 
 ### Windows
 
