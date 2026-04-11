@@ -227,23 +227,63 @@ function loadApiKey() {
   return null;
 }
 
-// Generate device fingerprint
+// Generate stable device fingerprint
 function generateDeviceFingerprint() {
   const crypto = require('crypto');
   const os = require('os');
-  
-  // Combine multiple device identifiers
+
+  const fingerprintPath = path.join(app.getPath('userData'), 'device-fingerprint.json');
+
+  try {
+    if (fs.existsSync(fingerprintPath)) {
+      const saved = JSON.parse(fs.readFileSync(fingerprintPath, 'utf8'));
+      if (saved && saved.fingerprint) {
+        return saved.fingerprint;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading saved device fingerprint:', err);
+  }
+
+  let machineId = null;
+
+  try {
+    if (process.platform === 'linux') {
+      const linuxMachineIdPaths = ['/etc/machine-id', '/var/lib/dbus/machine-id'];
+      for (const p of linuxMachineIdPaths) {
+        if (fs.existsSync(p)) {
+          machineId = fs.readFileSync(p, 'utf8').trim();
+          if (machineId) break;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error loading Linux machine id:', err);
+  }
+
   const fingerprintData = JSON.stringify({
+    namespace: 'ai-optimizer',
+    machineId: machineId || null,
     hostname: os.hostname(),
     platform: os.platform(),
     arch: os.arch(),
     cpus: os.cpus()[0]?.model,
-    totalMem: os.totalmem(),
-    uptime: os.uptime()
+    totalMem: os.totalmem()
   });
-  
-  // Create SHA256 hash
-  return crypto.createHash('sha256').update(fingerprintData).digest('hex');
+
+  const fingerprint = crypto.createHash('sha256').update(fingerprintData).digest('hex');
+
+  try {
+    fs.writeFileSync(fingerprintPath, JSON.stringify({
+      fingerprint,
+      savedAt: new Date().toISOString(),
+      version: 1
+    }));
+  } catch (err) {
+    console.error('Error saving device fingerprint:', err);
+  }
+
+  return fingerprint;
 }
 
 ipcMain.handle('save-api-key', async (event, apiKey) => {

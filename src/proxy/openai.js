@@ -71,6 +71,9 @@ module.exports.resetStats = function () {
   stats = { requests: 0, cacheHits: 0, totalSaved: 0.00 };
 };
 
+// Export getOpenAI for responses endpoint
+module.exports.getOpenAI = getOpenAI;
+
 /**
  * Process OpenAI chat completion request
  * @param {Object} requestBody - Request body

@@ -136,6 +136,19 @@ async function startServer(port = 3000) {
     res.status(405).json({ error: 'Method not allowed' });
   });
 
+  // Codex CLI endpoint (2025-2026 agentic CLI)
+  app.post('/backend-api/codex/responses', async (req, res) => {
+    try {
+      console.log('🤖 Codex CLI endpoint called');
+      const openai = getOpenAI();
+      const response = await openai.request(req.body);
+      res.json(response);
+    } catch (error) {
+      console.error('Codex CLI error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ChatGPT.com backend API - forward all requests to real backend
   // This catches /backend-api/* paths that the extension intercepts
   app.use('/backend-api/', async (req, res) => {

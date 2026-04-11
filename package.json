@@ -1,6 +1,6 @@
 {
   "name": "ai-optimizer",
-  "version": "2.0.0",
+  "version": "2.1.1",
   "description": "AI Optimizer v2 - Proxy server with caching to save 20-40% on OpenAI API costs",
   "main": "src/main.js",
   "homepage": "https://ai-optimizer-landing.vercel.app",
@@ -31,7 +31,9 @@
     "publish": null,
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": ["zip"]
+      "target": [
+        "zip"
+      ]
     },
     "win": {
       "target": [
