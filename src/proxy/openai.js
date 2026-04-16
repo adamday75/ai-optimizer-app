@@ -75,6 +75,25 @@ module.exports.resetStats = function () {
 module.exports.getOpenAI = getOpenAI;
 
 /**
+ * Passthrough OpenAI embeddings request (no caching yet)
+ * @param {Object} requestBody
+ * @returns {Object}
+ */
+module.exports.processEmbeddings = async function (requestBody) {
+  try {
+    const openai = getOpenAI();
+
+    // Support both {model, input} and any extra OpenAI fields by forwarding through.
+    const response = await openai.embeddings.create(requestBody);
+    stats.requests++;
+    return response;
+  } catch (error) {
+    console.error('OpenAI embeddings error:', error);
+    throw error;
+  }
+};
+
+/**
  * Process OpenAI chat completion request
  * @param {Object} requestBody - Request body
  * @returns {Object} Response

@@ -1,6 +1,6 @@
 // Proxy Server - Express wrapper for OpenAI proxy
 const express = require('express');
-const { processChatCompletion, getStats, resetStats, getOpenAI } = require('./openai.js');
+const { processChatCompletion, processEmbeddings, getStats, resetStats, getOpenAI } = require('./openai.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -99,6 +99,17 @@ async function startServer(port = 3000) {
       res.json(response);
     } catch (error) {
       console.error('Proxy error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // OpenAI embeddings passthrough (used by OpenClaw memory)
+  app.post('/v1/embeddings', async (req, res) => {
+    try {
+      const response = await processEmbeddings(req.body);
+      res.json(response);
+    } catch (error) {
+      console.error('Embeddings proxy error:', error);
       res.status(500).json({ error: error.message });
     }
   });
