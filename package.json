@@ -46,6 +46,11 @@
         "AppImage",
         "deb"
       ]
-    }
+    },
+    "files": [
+      "**/*",
+      "!api-key.json",
+      "!license.json"
+    ]
   }
 }
