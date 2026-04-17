@@ -1,6 +1,6 @@
 // Proxy Server - Express wrapper for OpenAI proxy
 const express = require('express');
-const { processChatCompletion, processEmbeddings, getStats, resetStats, getOpenAI } = require('./openai.js');
+const { processChatCompletion, processEmbeddings, getStats, resetStats, resetClient, getOpenAI } = require('./openai.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -240,6 +240,7 @@ async function stopServer() {
       isRunning = false;
       server = null;
       resetStats(); // Reset stats on restart
+      resetClient(); // Reset OpenAI client so key is re-read fresh on next start
       resolve(true);
     });
   });

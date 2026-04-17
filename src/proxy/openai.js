@@ -71,6 +71,11 @@ module.exports.resetStats = function () {
   stats = { requests: 0, cacheHits: 0, totalSaved: 0.00 };
 };
 
+// Reset OpenAI client (called when server restarts so key is re-read fresh)
+module.exports.resetClient = function () {
+  openaiClient = null;
+};
+
 // Export getOpenAI for responses endpoint
 module.exports.getOpenAI = getOpenAI;
 
