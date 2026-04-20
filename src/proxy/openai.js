@@ -1,5 +1,5 @@
 const { OpenAI } = require('openai');
-const { generateCacheKey, getCached, setCached } = require('./cache.js');
+const { generateCacheKey, getCached, setCached, getDefaultTtlSeconds } = require('./cache.js');
 const { recommendModel, calculateCost, estimateTokens } = require('./routing.js');
 const path = require('path');
 const fs = require('fs');
@@ -158,8 +158,7 @@ module.exports.processChatCompletion = async function (requestBody) {
 
     // Cache response
     if (cacheEnabled) {
-      // Cache for 5 minutes (can be made configurable)
-      setCached(cacheKey, response, 300);
+      setCached(cacheKey, response, getDefaultTtlSeconds());
     }
 
     // Return response

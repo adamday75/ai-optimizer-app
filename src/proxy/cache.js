@@ -1,9 +1,20 @@
 const NodeCache = require('node-cache');
 
-// In-memory cache for MVP - 5 min default TTL
+const DEFAULT_CACHE_TTL_SECONDS = 300;
+const DEFAULT_CACHE_CHECK_PERIOD_SECONDS = 60;
+
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const cacheTtlSeconds = parsePositiveInt(process.env.AI_OPTIMIZER_CACHE_TTL_SECONDS, DEFAULT_CACHE_TTL_SECONDS);
+const cacheCheckPeriodSeconds = parsePositiveInt(process.env.AI_OPTIMIZER_CACHE_CHECK_PERIOD_SECONDS, DEFAULT_CACHE_CHECK_PERIOD_SECONDS);
+
+// In-memory cache for MVP - configurable TTL via env
 const cache = new NodeCache({
-  stdTTL: 300, // 5 minutes
-  checkperiod: 60, // check for expired keys every 60 seconds
+  stdTTL: cacheTtlSeconds,
+  checkperiod: cacheCheckPeriodSeconds,
   useClones: false // for performance
 });
 
@@ -63,6 +74,8 @@ module.exports.getStats = function () {
   const keys = cache.keys();
   return {
     totalKeys: keys.length,
+    ttlSeconds: cacheTtlSeconds,
+    checkPeriodSeconds: cacheCheckPeriodSeconds,
     stats: cache.getStats()
   };
 }
@@ -72,6 +85,10 @@ module.exports.getStats = function () {
  */
 module.exports.clearCache = function () {
   cache.flushAll();
+}
+
+module.exports.getDefaultTtlSeconds = function () {
+  return cacheTtlSeconds;
 }
 
 // All functions exported via module.exports above
