@@ -14,26 +14,9 @@ let stats = {
 // Lazy initialization - only create client when needed
 let openaiClient = null;
 
-// Get API key from Electron app storage (or env var for standalone)
+// Get API key from Electron app storage first, then dev fallbacks
 function getApiKey() {
-  // Try env var first (for standalone testing)
-  if (process.env.OPENAI_API_KEY) {
-    return process.env.OPENAI_API_KEY;
-  }
-  
-  // Try local config file (for standalone testing)
-  try {
-    const localConfigPath = path.join(__dirname, '../../api-key.json');
-    if (fs.existsSync(localConfigPath)) {
-      const data = fs.readFileSync(localConfigPath, 'utf8');
-      const config = JSON.parse(data);
-      return config.apiKey;
-    }
-  } catch (err) {
-    console.error('Error loading API key from local config:', err);
-  }
-  
-  // Try Electron app storage
+  // Try Electron app storage first, since the UI is the intended install flow
   try {
     const electron = require('electron');
     if (electron && electron.app) {
@@ -41,12 +24,34 @@ function getApiKey() {
       if (fs.existsSync(configPath)) {
         const data = fs.readFileSync(configPath, 'utf8');
         const config = JSON.parse(data);
-        return config.apiKey;
+        if (config.apiKey) {
+          return config.apiKey;
+        }
       }
     }
   } catch (err) {
     console.error('Error loading API key from Electron:', err);
   }
+
+  // Dev / standalone fallback: explicit environment variable
+  if (process.env.OPENAI_API_KEY) {
+    return process.env.OPENAI_API_KEY;
+  }
+
+  // Dev / standalone fallback: repo-local config file
+  try {
+    const localConfigPath = path.join(__dirname, '../../api-key.json');
+    if (fs.existsSync(localConfigPath)) {
+      const data = fs.readFileSync(localConfigPath, 'utf8');
+      const config = JSON.parse(data);
+      if (config.apiKey) {
+        return config.apiKey;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading API key from local config:', err);
+  }
+
   return null;
 }
 
