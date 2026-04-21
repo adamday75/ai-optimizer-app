@@ -50,11 +50,23 @@ async function init() {
     if (savedApiKey && savedApiKey.apiKey) {
       apiKeyInput.value = savedApiKey.apiKey;
       apiStatus.style.display = 'flex';
+    } else {
+      // Warn if proxy section visible but no API key
+      if (proxySection.style.display !== 'none') {
+        showMessage('⚠️ License active but no API key configured. Enter your key and click Save before starting the proxy.', 'warning');
+      }
     }
   }
   
-  // Set version
-  versionSpan.textContent = '1.0.0';
+  // Set version from package metadata when available
+  try {
+    const version = window.electronAPI?.getAppVersion
+      ? await window.electronAPI.getAppVersion()
+      : '2.1.3';
+    versionSpan.textContent = version || '2.1.3';
+  } catch (err) {
+    versionSpan.textContent = '2.1.3';
+  }
 }
 
 // Show license active state
@@ -155,6 +167,13 @@ async function handleSaveApiKey() {
 
 // Start Proxy Server
 async function handleStartProxy() {
+  // Pre-flight check: API key must be saved first
+  const savedApiKey = await window.electronAPI.loadApiKey();
+  if (!savedApiKey || !savedApiKey.apiKey || savedApiKey.apiKey.includes('YOUR-KEY') || savedApiKey.apiKey.includes('HERE')) {
+    showMessage('❌ API key not configured! Please enter your OpenAI API key first, then click Save.', 'error');
+    return;
+  }
+  
   startProxyBtn.disabled = true;
   startProxyBtn.textContent = 'Starting...';
   
@@ -166,7 +185,7 @@ async function handleStartProxy() {
     proxyStatusText.textContent = 'Running';
     proxyStats.style.display = 'flex';
     proxyPort.textContent = result.port;
-    showMessage('Proxy server started!', 'success');
+    showMessage('✅ Proxy server started!', 'success');
     updateProxyStats(); // Initial stats
     startStatsPolling(); // Start auto-refresh every 2 seconds
   } else {

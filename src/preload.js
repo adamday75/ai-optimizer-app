@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
   loadApiKey: () => ipcRenderer.invoke('load-api-key'),
   
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+
   // Proxy server management
   startProxy: (port) => ipcRenderer.invoke('start-proxy', port),
   stopProxy: () => ipcRenderer.invoke('stop-proxy'),

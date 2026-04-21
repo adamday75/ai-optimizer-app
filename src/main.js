@@ -297,3 +297,7 @@ ipcMain.handle('load-api-key', async () => {
 ipcMain.handle('generate-device-fingerprint', async () => {
   return generateDeviceFingerprint();
 });
+
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});

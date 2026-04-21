@@ -118,13 +118,12 @@ async function startServer(port = 3000) {
   app.post('/v1/responses', async (req, res) => {
     try {
       console.log('📝 Responses API called');
-      // For now, proxy to OpenAI directly (no caching for responses)
       const openai = getOpenAI();
-      const response = await openai.request(req.body);
+      const response = await openai.responses.create(req.body);
       res.json(response);
     } catch (error) {
       console.error('Responses API error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(error?.status || 500).json({ error: error.message });
     }
   });
 
@@ -133,11 +132,11 @@ async function startServer(port = 3000) {
     try {
       console.log('📝 Codex /responses endpoint called');
       const openai = getOpenAI();
-      const response = await openai.request(req.body);
+      const response = await openai.responses.create(req.body);
       res.json(response);
     } catch (error) {
       console.error('Codex /responses error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(error?.status || 500).json({ error: error.message });
     }
   });
 
@@ -152,11 +151,11 @@ async function startServer(port = 3000) {
     try {
       console.log('🤖 Codex CLI endpoint called');
       const openai = getOpenAI();
-      const response = await openai.request(req.body);
+      const response = await openai.responses.create(req.body);
       res.json(response);
     } catch (error) {
       console.error('Codex CLI error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(error?.status || 500).json({ error: error.message });
     }
   });
 
