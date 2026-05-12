@@ -78,6 +78,17 @@
           <span id="proxy-status-text" style="margin-left: 10px;">Stopped</span>
         </div>
 
+        <div id="cache-settings" class="settings-row">
+          <label for="cache-ttl-select">Cache TTL:</label>
+          <select id="cache-ttl-select">
+            <option value="300">5 minutes</option>
+            <option value="1800">30 minutes</option>
+            <option value="3600">1 hour</option>
+            <option value="21600">6 hours</option>
+          </select>
+          <p class="settings-note" id="cache-ttl-note">Saved setting. Restart the proxy to apply changes.</p>
+        </div>
+
         <div id="proxy-stats" class="status-box" style="display:none;">
           <div class="status-indicator active"></div>
           <div class="status-text">

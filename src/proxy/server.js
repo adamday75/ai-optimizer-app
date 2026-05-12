@@ -1,6 +1,7 @@
 // Proxy Server - Express wrapper for OpenAI proxy
 const express = require('express');
 const { processChatCompletion, processEmbeddings, getStats, resetStats, resetClient, getOpenAI } = require('./openai.js');
+const { configureCache } = require('./cache.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -69,11 +70,14 @@ function requireValidLicense(req, res, next) {
  * @param {number} port - Port to listen on
  * @returns {Promise<boolean>} - Success status
  */
-async function startServer(port = 3000) {
+async function startServer(port = 3000, settings = {}) {
   if (isRunning) {
     console.log('⚠️  Proxy server already running');
     return false;
   }
+
+  const cacheConfig = configureCache(settings);
+  logToFile(`🧠 Cache TTL configured: ${cacheConfig.ttlSeconds}s (${cacheConfig.source})`);
 
   const app = express();
   app.use(express.json());

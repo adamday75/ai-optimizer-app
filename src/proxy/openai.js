@@ -68,7 +68,10 @@ function getOpenAI() {
 
 // Get stats (called from UI via IPC)
 module.exports.getStats = function () {
-  return stats;
+  return {
+    ...stats,
+    cacheTtlSeconds: getDefaultTtlSeconds()
+  };
 };
 
 // Reset stats (called when server restarts)

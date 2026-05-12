@@ -27,9 +27,13 @@ const proxyRequests = document.getElementById('proxy-requests');
 const proxyCacheHits = document.getElementById('proxy-cache-hits');
 const proxyCacheRate = document.getElementById('proxy-cache-rate');
 const proxySaved = document.getElementById('proxy-saved');
+const cacheTtlSelect = document.getElementById('cache-ttl-select');
+const cacheTtlNote = document.getElementById('cache-ttl-note');
 
 // Initialize
 async function init() {
+  await loadAppSettings();
+
   // Load saved license
   const saved = await window.electronAPI.loadLicense();
   if (saved && saved.licenseKey) {
@@ -57,6 +61,8 @@ async function init() {
       }
     }
   }
+
+  await syncProxyStatus();
   
   // Set version from package metadata when available
   try {
@@ -66,6 +72,92 @@ async function init() {
     versionSpan.textContent = version || '2.1.3';
   } catch (err) {
     versionSpan.textContent = '2.1.3';
+  }
+}
+
+function formatTtl(seconds) {
+  if (seconds >= 3600) {
+    const hours = seconds / 3600;
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  }
+  const minutes = seconds / 60;
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
+async function loadAppSettings() {
+  const settings = await window.electronAPI.loadSettings();
+  if (!settings) return;
+
+  cacheTtlSelect.value = String(settings.cacheTtlSeconds || 300);
+  updateCacheTtlNote(settings);
+}
+
+function applyProxyStatus(status = {}) {
+  const isRunning = Boolean(status.isRunning);
+
+  startProxyBtn.style.display = isRunning ? 'none' : 'inline-block';
+  startProxyBtn.disabled = false;
+  startProxyBtn.textContent = '▶ Start';
+
+  stopProxyBtn.style.display = isRunning ? 'inline-block' : 'none';
+  stopProxyBtn.disabled = false;
+  stopProxyBtn.textContent = '⏹ Stop';
+
+  proxyStatusText.textContent = isRunning ? 'Running' : 'Stopped';
+  proxyStats.style.display = isRunning ? 'flex' : 'none';
+
+  if (isRunning) {
+    proxyPort.textContent = status.port || 3000;
+    if (status.stats) {
+      proxyRequests.textContent = status.stats.requests;
+      proxyCacheHits.textContent = status.stats.cacheHits;
+      const rate = status.stats.requests > 0
+        ? ((status.stats.cacheHits / status.stats.requests) * 100).toFixed(1)
+        : '0';
+      proxyCacheRate.textContent = rate;
+      proxySaved.textContent = Number(status.stats.totalSaved || 0).toFixed(4);
+    }
+  }
+}
+
+async function syncProxyStatus() {
+  try {
+    const status = await window.electronAPI.getProxyStatus();
+    applyProxyStatus(status);
+
+    if (status.isRunning) {
+      startStatsPolling();
+    } else {
+      stopStatsPolling();
+    }
+
+    return status;
+  } catch (error) {
+    stopStatsPolling();
+    applyProxyStatus({ isRunning: false, port: 3000, stats: null });
+    throw error;
+  }
+}
+
+function updateCacheTtlNote(settings) {
+  if (settings.envCacheTtlSeconds) {
+    cacheTtlNote.textContent = `Environment override active: ${formatTtl(settings.envCacheTtlSeconds)}. Saved changes will apply after removing the override and restarting the proxy.`;
+    return;
+  }
+
+  const effectiveTtl = settings.effectiveCacheTtlSeconds || settings.cacheTtlSeconds || 300;
+  cacheTtlNote.textContent = `Saved setting: ${formatTtl(effectiveTtl)}. Restart the proxy to apply changes.`;
+}
+
+async function handleCacheTtlChange() {
+  const cacheTtlSeconds = Number.parseInt(cacheTtlSelect.value, 10);
+  const settings = await window.electronAPI.saveSettings({ cacheTtlSeconds });
+
+  if (settings) {
+    updateCacheTtlNote(settings);
+    showMessage('Cache TTL saved. Restart the proxy to apply it.', 'success');
+  } else {
+    showMessage('Failed to save cache TTL setting', 'error');
   }
 }
 
@@ -178,20 +270,12 @@ async function handleStartProxy() {
   startProxyBtn.textContent = 'Starting...';
   
   const result = await window.electronAPI.startProxy(3000);
+  const status = await syncProxyStatus();
   
-  if (result.success) {
-    startProxyBtn.style.display = 'none';
-    stopProxyBtn.style.display = 'inline-block';
-    proxyStatusText.textContent = 'Running';
-    proxyStats.style.display = 'flex';
-    proxyPort.textContent = result.port;
+  if (result.success && status.isRunning) {
     showMessage('✅ Proxy server started!', 'success');
-    updateProxyStats(); // Initial stats
-    startStatsPolling(); // Start auto-refresh every 2 seconds
   } else {
-    startProxyBtn.disabled = false;
-    startProxyBtn.textContent = '▶ Start';
-    showMessage(`Failed to start: ${result.error}`, 'error');
+    showMessage(`Failed to start: ${result.error || 'Proxy did not enter running state'}`, 'error');
   }
 }
 
@@ -201,34 +285,22 @@ async function handleStopProxy() {
   stopProxyBtn.textContent = 'Stopping...';
   
   const result = await window.electronAPI.stopProxy();
+  const status = await syncProxyStatus();
   
-  if (result.success) {
-    stopProxyBtn.style.display = 'none';
-    startProxyBtn.style.display = 'inline-block';
-    startProxyBtn.disabled = false;
-    startProxyBtn.textContent = '▶ Start';
-    proxyStatusText.textContent = 'Stopped';
-    proxyStats.style.display = 'none';
-    stopStatsPolling(); // Stop auto-refresh
+  if (result.success || !status.isRunning) {
     showMessage('Proxy server stopped', 'success');
   } else {
-    stopProxyBtn.disabled = false;
-    stopProxyBtn.textContent = '⏹ Stop';
-    showMessage(`Failed to stop: ${result.error}`, 'error');
+    showMessage(`Failed to stop: ${result.error || 'Proxy still appears to be running'}`, 'error');
   }
 }
 
 // Update proxy stats display
 async function updateProxyStats() {
   const status = await window.electronAPI.getProxyStatus();
-  if (status.isRunning && status.stats) {
-    proxyRequests.textContent = status.stats.requests;
-    proxyCacheHits.textContent = status.stats.cacheHits;
-    const rate = status.stats.requests > 0 
-      ? ((status.stats.cacheHits / status.stats.requests) * 100).toFixed(1) 
-      : '0';
-    proxyCacheRate.textContent = rate;
-    proxySaved.textContent = status.stats.totalSaved.toFixed(4);
+  applyProxyStatus(status);
+
+  if (!status.isRunning) {
+    stopStatsPolling();
   }
 }
 
@@ -251,6 +323,7 @@ validateBtn.addEventListener('click', handleLicense);
 saveApiBtn.addEventListener('click', handleSaveApiKey);
 startProxyBtn.addEventListener('click', handleStartProxy);
 stopProxyBtn.addEventListener('click', handleStopProxy);
+cacheTtlSelect.addEventListener('change', handleCacheTtlChange);
 
 // Initialize on load
 init();

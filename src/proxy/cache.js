@@ -2,21 +2,55 @@ const NodeCache = require('node-cache');
 
 const DEFAULT_CACHE_TTL_SECONDS = 300;
 const DEFAULT_CACHE_CHECK_PERIOD_SECONDS = 60;
+const CACHE_TTL_ENV_VAR = 'AI_OPTIMIZER_CACHE_TTL_SECONDS';
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-const cacheTtlSeconds = parsePositiveInt(process.env.AI_OPTIMIZER_CACHE_TTL_SECONDS, DEFAULT_CACHE_TTL_SECONDS);
 const cacheCheckPeriodSeconds = parsePositiveInt(process.env.AI_OPTIMIZER_CACHE_CHECK_PERIOD_SECONDS, DEFAULT_CACHE_CHECK_PERIOD_SECONDS);
 
-// In-memory cache for MVP - configurable TTL via env
-const cache = new NodeCache({
-  stdTTL: cacheTtlSeconds,
-  checkperiod: cacheCheckPeriodSeconds,
-  useClones: false // for performance
-});
+function resolveCacheTtlSeconds(settings = {}) {
+  const envTtlSeconds = parsePositiveInt(process.env[CACHE_TTL_ENV_VAR], null);
+  return envTtlSeconds || parsePositiveInt(settings.cacheTtlSeconds, DEFAULT_CACHE_TTL_SECONDS);
+}
+
+function getCacheTtlSource(settings = {}) {
+  if (parsePositiveInt(process.env[CACHE_TTL_ENV_VAR], null)) return 'env';
+  if (parsePositiveInt(settings.cacheTtlSeconds, null)) return 'settings';
+  return 'default';
+}
+
+let cacheTtlSeconds = resolveCacheTtlSeconds();
+
+function createCache(ttlSeconds) {
+  return new NodeCache({
+    stdTTL: ttlSeconds,
+    checkperiod: cacheCheckPeriodSeconds,
+    useClones: false // for performance
+  });
+}
+
+// In-memory cache for MVP - configurable via env override or saved app settings
+let cache = createCache(cacheTtlSeconds);
+
+module.exports.configureCache = function (settings = {}) {
+  const nextTtlSeconds = resolveCacheTtlSeconds(settings);
+
+  if (nextTtlSeconds !== cacheTtlSeconds) {
+    cacheTtlSeconds = nextTtlSeconds;
+    cache.flushAll();
+    cache.close();
+    cache = createCache(cacheTtlSeconds);
+  }
+
+  return {
+    ttlSeconds: cacheTtlSeconds,
+    checkPeriodSeconds: cacheCheckPeriodSeconds,
+    source: getCacheTtlSource(settings)
+  };
+}
 
 /**
  * Generate cache key from request

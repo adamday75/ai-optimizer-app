@@ -13,6 +13,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // API key management
   saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
   loadApiKey: () => ipcRenderer.invoke('load-api-key'),
+
+  // App settings
+  loadSettings: () => ipcRenderer.invoke('load-settings'),
+  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 

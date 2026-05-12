@@ -23,6 +23,79 @@ let proxyState = {
   port: 3000
 };
 
+const DEFAULT_SETTINGS = {
+  cacheTtlSeconds: 300
+};
+
+function getSettingsPath() {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function getEffectiveCacheTtlSeconds(settings) {
+  return parsePositiveInt(
+    process.env.AI_OPTIMIZER_CACHE_TTL_SECONDS,
+    parsePositiveInt(settings.cacheTtlSeconds, DEFAULT_SETTINGS.cacheTtlSeconds)
+  );
+}
+
+function loadSettings() {
+  const settingsPath = getSettingsPath();
+  let settings = { ...DEFAULT_SETTINGS };
+  let settingsExists = false;
+
+  try {
+    if (fs.existsSync(settingsPath)) {
+      const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+      settingsExists = true;
+      settings = {
+        ...settings,
+        ...data,
+        cacheTtlSeconds: parsePositiveInt(data.cacheTtlSeconds, DEFAULT_SETTINGS.cacheTtlSeconds)
+      };
+    }
+  } catch (err) {
+    console.error('Error loading settings:', err);
+  }
+
+  const envCacheTtlSeconds = process.env.AI_OPTIMIZER_CACHE_TTL_SECONDS
+    ? parsePositiveInt(process.env.AI_OPTIMIZER_CACHE_TTL_SECONDS, null)
+    : null;
+
+  return {
+    ...settings,
+    effectiveCacheTtlSeconds: getEffectiveCacheTtlSeconds(settings),
+    cacheTtlSource: envCacheTtlSeconds ? 'env' : (settingsExists ? 'settings' : 'default'),
+    envCacheTtlSeconds
+  };
+}
+
+function saveSettings(nextSettings = {}) {
+  const currentSettings = loadSettings();
+  const settings = {
+    ...currentSettings,
+    cacheTtlSeconds: parsePositiveInt(nextSettings.cacheTtlSeconds, currentSettings.cacheTtlSeconds)
+  };
+  delete settings.effectiveCacheTtlSeconds;
+  delete settings.cacheTtlSource;
+  delete settings.envCacheTtlSeconds;
+
+  try {
+    fs.writeFileSync(getSettingsPath(), JSON.stringify({
+      ...settings,
+      savedAt: new Date().toISOString()
+    }, null, 2));
+    return loadSettings();
+  } catch (err) {
+    console.error('Error saving settings:', err);
+    return null;
+  }
+}
+
 // Logging helper for debugging
 const logFile = path.join(__dirname, '../proxy-debug.log');
 function logToFile(message) {
@@ -166,10 +239,19 @@ ipcMain.handle('get-license-state', () => {
   return licenseState;
 });
 
+ipcMain.handle('load-settings', () => {
+  return loadSettings();
+});
+
+ipcMain.handle('save-settings', async (event, settings) => {
+  return saveSettings(settings);
+});
+
 // Proxy Server IPC Handlers
 ipcMain.handle('start-proxy', async (event, port = 3000) => {
   try {
-    const started = await proxyServer.startServer(port);
+    const settings = loadSettings();
+    const started = await proxyServer.startServer(port, settings);
     proxyState.isRunning = started;
     proxyState.port = port;
     return { success: started, port };
