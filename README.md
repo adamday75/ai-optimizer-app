@@ -1,20 +1,22 @@
-# AI Optimizer v2.1.3
+# AI Optimizer v2.2.0
 
-**Save on OpenAI API usage with a desktop proxy that adds caching, license enforcement, and a simple local control panel.**
+**A local desktop proxy that helps you control, cache, and optimize LLM API traffic with support for both OpenAI and Anthropic.**
 
 ---
 
-## What’s New in v2.1.3
+## What’s New in v2.2.0
 
-Released April 20, 2026.
+Released May 12, 2026.
 
-### Fixes in this release
-- Fixed OpenAI **Responses API** proxying for `/v1/responses`
-- Fixed compatibility for `/responses` and Codex-style response routes
-- Confirmed **embeddings passthrough** works for OpenClaw memory use
-- Fixed the app UI to correctly display **Version 2.1.3**
+### New in this release
+- Added **Anthropic provider support**
+- Added **provider selection** in the desktop UI
+- Added **provider-specific API key handling**
+- Preserved the local proxy workflow on `localhost:3000`
+- Preserved request caching with provider-aware cache separation
+- Included updated **Chrome extension**
 
-If you are using newer OpenAI clients, Codex-style tooling, or local memory/embedding flows, this is the version you want.
+AI Optimizer now supports **OpenAI + Anthropic** with one active provider at a time.
 
 [Download the latest release](https://github.com/adamday75/ai-optimizer-app/releases/latest)
 
@@ -22,12 +24,13 @@ If you are using newer OpenAI clients, Codex-style tooling, or local memory/embe
 
 ## What AI Optimizer Does
 
-AI Optimizer runs as a local desktop app and proxy in front of the OpenAI API.
+AI Optimizer runs as a local desktop app and proxy in front of model API traffic.
 
 It helps you:
 - reduce repeated API spend with caching
+- route requests through a local endpoint you control
+- switch providers from a simple desktop UI
 - enforce license access before proxy usage
-- route traffic through a local endpoint you control
 - track request volume, cache hits, and estimated savings
 
 Desktop builds are available for **macOS, Windows, and Linux**.
@@ -38,20 +41,29 @@ Desktop builds are available for **macOS, Windows, and Linux**.
 
 ### Available now
 - Local proxy server on `localhost:3000`
+- **OpenAI** provider support
+- **Anthropic** provider support
 - OpenAI Chat Completions support
 - OpenAI Responses API support
 - OpenAI Embeddings passthrough support
+- Anthropic chat support through the local proxy
+- Provider selection in the app UI
+- Provider-specific API key storage
 - License validation enforcement at the proxy layer
-- Persistent API key storage
 - Real-time stats in the desktop UI
-- Cost/savings tracking
 - Start/Stop proxy controls
+- Chrome extension download
+
+### Current Anthropic scope
+- `POST /v1/chat/completions` works when Anthropic is selected
+- Anthropic support in **v2.2.0** is focused on chat completions
+- When Anthropic is active, embeddings and responses are not supported in this release
 
 ### In progress / planned
-- broader provider coverage
+- automatic model/provider routing
 - deeper cache controls
 - expanded request visibility and history
-- higher-tier/team features
+- more provider coverage over time
 
 ---
 
@@ -79,14 +91,17 @@ Get current installers from the GitHub Releases page:
 ### Linux
 **AppImage**
 ```bash
-chmod +x AI\ Optimizer-2.1.3.AppImage
-./AI\ Optimizer-2.1.3.AppImage
+chmod +x AI\ Optimizer-2.2.0.AppImage
+./AI\ Optimizer-2.2.0.AppImage
 ```
 
 **DEB package**
 ```bash
-sudo apt install ./ai-optimizer_2.1.3_amd64.deb
+sudo apt install ./ai-optimizer_2.2.0_amd64.deb
 ```
+
+### Chrome Extension
+A downloadable Chrome extension zip is included in the release assets.
 
 ---
 
@@ -98,28 +113,37 @@ sudo apt install ./ai-optimizer_2.1.3_amd64.deb
 - Click **Activate**
 - Confirm the license status is active
 
-### 2. Save your OpenAI API key
-- Paste your OpenAI API key into the app
-- Click **Save**
-- Confirm API key status is configured
+### 2. Choose your provider
+- Select **OpenAI** or **Anthropic** in the app
+- The app uses **one active provider at a time**
 
-### 3. Start the proxy
+### 3. Save the API key for that provider
+- Paste the API key into the app
+- Click **Save**
+- Confirm key status is configured
+
+### 4. Start the proxy
 - In the Proxy Server section, click **Start**
 - The proxy will run on `http://localhost:3000`
 
-### 4. Point your tools at the local proxy
-Use `http://localhost:3000` in place of `https://api.openai.com` where appropriate for your workflow.
+### 5. Point your tools at the local proxy
+Use `http://localhost:3000` in place of the upstream API base URL where appropriate for your workflow.
 
 ---
 
 ## Supported Endpoints
 
-Current validated paths include:
+### When OpenAI is active
 - `POST /v1/chat/completions`
 - `POST /v1/responses`
 - `POST /responses`
 - `POST /backend-api/codex/responses`
 - `POST /v1/embeddings`
+- `GET /health`
+- `GET /stats`
+
+### When Anthropic is active
+- `POST /v1/chat/completions`
 - `GET /health`
 - `GET /stats`
 
@@ -137,7 +161,23 @@ Expected response:
 {"status":"ok","running":true}
 ```
 
-## Example Embeddings Check
+## Example OpenAI Chat Check
+
+```bash
+curl -sS http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+## Example Anthropic Chat Check
+
+```bash
+curl -sS http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+## Example OpenAI Embeddings Check
 
 ```bash
 curl -sS http://localhost:3000/v1/embeddings \
@@ -145,27 +185,19 @@ curl -sS http://localhost:3000/v1/embeddings \
   -d '{"model":"text-embedding-3-small","input":"hello from openclaw memory"}'
 ```
 
-## Example Responses Check
-
-```bash
-curl -sS http://localhost:3000/v1/responses \
-  -H "Content-Type: application/json" \
-  -d '{"model":"gpt-4o-mini","input":"Reply with exactly: ok"}'
-```
-
 ---
 
 ## How It Works
 
 ```text
-Your App → AI Optimizer (localhost:3000) → OpenAI API
-                ↓
-           Cache / Validate
-                ↓
-      Hit: return cached result
-      Miss: call upstream API
-                ↓
-       Update stats and savings
+Your App / Tool → AI Optimizer (localhost:3000) → Selected Provider API
+                         ↓
+                Cache / Validate / Track
+                         ↓
+             Hit: return cached result
+             Miss: call upstream API
+                         ↓
+              Update stats and behavior
 ```
 
 ---
@@ -175,8 +207,12 @@ Your App → AI Optimizer (localhost:3000) → OpenAI API
 ### App starts but proxy will not start
 Check:
 - license is active
-- API key is saved
+- the correct provider API key is saved
 - port `3000` is not already occupied by another process
+
+### Anthropic request returns model error
+Make sure you are using a valid Anthropic model ID, such as:
+- `claude-sonnet-4-6`
 
 ### macOS app will not open
 Run:
@@ -185,7 +221,7 @@ xattr -r -d com.apple.quarantine /Applications/AI\ Optimizer.app
 ```
 
 ### No cache hits yet
-Cache hits depend on repeated requests matching closely, including model and input parameters.
+Cache hits depend on repeated requests matching closely, including provider, model, and input parameters.
 
 ---
 
@@ -193,7 +229,14 @@ Cache hits depend on repeated requests matching closely, including model and inp
 
 ### Latest release
 - Visit: [GitHub Releases](https://github.com/adamday75/ai-optimizer-app/releases/latest)
-- Current release: **v2.1.3**
+- Current release: **v2.2.0**
+
+Release assets include:
+- macOS zip
+- Linux AppImage
+- Linux `.deb`
+- Windows build
+- Chrome extension zip
 
 ---
 
@@ -212,6 +255,7 @@ Cache hits depend on repeated requests matching closely, including model and inp
 - Express
 - NodeCache
 - OpenAI API
+- Anthropic API
 
 ---
 
