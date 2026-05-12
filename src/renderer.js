@@ -11,10 +11,21 @@ const statusEmail = document.getElementById('status-email');
 const lastChecked = document.getElementById('last-checked');
 const messageDiv = document.getElementById('message');
 const apiSection = document.getElementById('api-section');
+const apiSectionHeading = document.getElementById('api-section-heading');
+const providerSelect = document.getElementById('provider-select');
+const apiKeyLabel = document.getElementById('api-key-label');
 const apiKeyInput = document.getElementById('api-key');
 const saveApiBtn = document.getElementById('save-api-btn');
 const apiStatus = document.getElementById('api-status');
+const apiStatusTitle = document.getElementById('api-status-title');
+const apiStatusMessage = document.getElementById('api-status-message');
 const versionSpan = document.getElementById('version');
+
+const PROVIDERS = {
+  openai: { label: 'OpenAI', placeholder: 'sk-...', keyField: 'openaiApiKey' },
+  anthropic: { label: 'Anthropic', placeholder: 'sk-ant-...', keyField: 'anthropicApiKey' }
+};
+let appSettings = { provider: 'openai', cacheTtlSeconds: 300, openaiApiKey: '', anthropicApiKey: '' };
 
 // Proxy Section Elements (V2)
 const proxySection = document.getElementById('proxy-section');
@@ -49,15 +60,11 @@ async function init() {
     showLicenseActive(state);
     apiSection.style.display = 'block';
     
-    // Load saved API key
-    const savedApiKey = await window.electronAPI.loadApiKey();
-    if (savedApiKey && savedApiKey.apiKey) {
-      apiKeyInput.value = savedApiKey.apiKey;
-      apiStatus.style.display = 'flex';
-    } else {
+    await loadActiveProviderKey();
+    if (!getActiveProviderKey()) {
       // Warn if proxy section visible but no API key
       if (proxySection.style.display !== 'none') {
-        showMessage('⚠️ License active but no API key configured. Enter your key and click Save before starting the proxy.', 'warning');
+        showMessage(`⚠️ License active but no ${getActiveProviderLabel()} API key configured. Enter your key and click Save before starting the proxy.`, 'warning');
       }
     }
   }
@@ -88,8 +95,46 @@ async function loadAppSettings() {
   const settings = await window.electronAPI.loadSettings();
   if (!settings) return;
 
-  cacheTtlSelect.value = String(settings.cacheTtlSeconds || 300);
+  appSettings = { ...appSettings, ...settings };
+  providerSelect.value = appSettings.provider || 'openai';
+  cacheTtlSelect.value = String(appSettings.cacheTtlSeconds || 300);
+  updateProviderUi();
   updateCacheTtlNote(settings);
+}
+
+function getActiveProviderConfig() {
+  return PROVIDERS[appSettings.provider] || PROVIDERS.openai;
+}
+
+function getActiveProviderLabel() {
+  return getActiveProviderConfig().label;
+}
+
+function getActiveProviderKey() {
+  const provider = getActiveProviderConfig();
+  return appSettings[provider.keyField] || '';
+}
+
+function updateProviderUi() {
+  const provider = getActiveProviderConfig();
+  const savedKey = getActiveProviderKey();
+  apiSectionHeading.textContent = `${provider.label} API Key`;
+  apiKeyLabel.textContent = `${provider.label} API Key:`;
+  apiKeyInput.placeholder = provider.placeholder;
+  apiKeyInput.value = savedKey;
+  saveApiBtn.textContent = `Save ${provider.label} Key`;
+  apiStatusTitle.textContent = `${provider.label} API Key Configured`;
+  apiStatusMessage.textContent = `Ready to optimize your ${provider.label} requests`;
+  apiStatus.style.display = savedKey ? 'flex' : 'none';
+}
+
+async function loadActiveProviderKey() {
+  const savedApiKey = await window.electronAPI.loadApiKey(appSettings.provider);
+  if (savedApiKey) {
+    const provider = PROVIDERS[savedApiKey.provider] || getActiveProviderConfig();
+    appSettings[provider.keyField] = savedApiKey.apiKey || '';
+  }
+  updateProviderUi();
 }
 
 function applyProxyStatus(status = {}) {
@@ -154,6 +199,7 @@ async function handleCacheTtlChange() {
   const settings = await window.electronAPI.saveSettings({ cacheTtlSeconds });
 
   if (settings) {
+    appSettings = { ...appSettings, ...settings };
     updateCacheTtlNote(settings);
     showMessage('Cache TTL saved. Restart the proxy to apply it.', 'success');
   } else {
@@ -238,20 +284,35 @@ async function handleLicense() {
 }
 
 // Save API key
+async function handleProviderChange() {
+  const provider = providerSelect.value;
+  const settings = await window.electronAPI.saveSettings({ provider });
+  if (!settings) {
+    showMessage('Failed to save provider selection', 'error');
+    providerSelect.value = appSettings.provider || 'openai';
+    return;
+  }
+
+  appSettings = { ...appSettings, ...settings };
+  updateProviderUi();
+  showMessage(`${getActiveProviderLabel()} selected. The proxy will use this provider.`, 'success');
+}
+
 async function handleSaveApiKey() {
   const apiKey = apiKeyInput.value.trim();
   
   if (!apiKey) {
-    showMessage('Please enter an API key', 'error');
+    showMessage(`Please enter a ${getActiveProviderLabel()} API key`, 'error');
     return;
   }
   
-  // Save via IPC handler
-  const saved = await window.electronAPI.saveApiKey(apiKey);
+  // Save via IPC handler for the active provider
+  const saved = await window.electronAPI.saveApiKey(apiKey, appSettings.provider);
   
   if (saved) {
+    await loadAppSettings();
     apiStatus.style.display = 'flex';
-    showMessage('API key saved! ✅', 'success');
+    showMessage(`${getActiveProviderLabel()} API key saved! ✅`, 'success');
   } else {
     showMessage('Failed to save API key', 'error');
   }
@@ -260,9 +321,9 @@ async function handleSaveApiKey() {
 // Start Proxy Server
 async function handleStartProxy() {
   // Pre-flight check: API key must be saved first
-  const savedApiKey = await window.electronAPI.loadApiKey();
+  const savedApiKey = await window.electronAPI.loadApiKey(appSettings.provider);
   if (!savedApiKey || !savedApiKey.apiKey || savedApiKey.apiKey.includes('YOUR-KEY') || savedApiKey.apiKey.includes('HERE')) {
-    showMessage('❌ API key not configured! Please enter your OpenAI API key first, then click Save.', 'error');
+    showMessage(`❌ API key not configured! Please enter your ${getActiveProviderLabel()} API key first, then click Save.`, 'error');
     return;
   }
   
@@ -320,6 +381,7 @@ function stopStatsPolling() {
 // Event Listeners
 activateBtn.addEventListener('click', handleLicense);
 validateBtn.addEventListener('click', handleLicense);
+providerSelect.addEventListener('change', handleProviderChange);
 saveApiBtn.addEventListener('click', handleSaveApiKey);
 startProxyBtn.addEventListener('click', handleStartProxy);
 stopProxyBtn.addEventListener('click', handleStopProxy);

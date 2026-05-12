@@ -1,6 +1,6 @@
-// Proxy Server - Express wrapper for OpenAI proxy
+// Proxy Server - Express wrapper for active AI provider
 const express = require('express');
-const { processChatCompletion, processEmbeddings, getStats, resetStats, resetClient, getOpenAI } = require('./openai.js');
+const { processChatCompletion, processEmbeddings, processResponses, getStats, resetStats, resetClients, configureProviders } = require('./provider-router.js');
 const { configureCache } = require('./cache.js');
 const fs = require('fs');
 const path = require('path');
@@ -77,7 +77,9 @@ async function startServer(port = 3000, settings = {}) {
   }
 
   const cacheConfig = configureCache(settings);
+  configureProviders(settings);
   logToFile(`🧠 Cache TTL configured: ${cacheConfig.ttlSeconds}s (${cacheConfig.source})`);
+  logToFile(`🤖 Active provider configured: ${settings.provider || 'openai'}`);
 
   const app = express();
   app.use(express.json());
@@ -96,34 +98,33 @@ async function startServer(port = 3000, settings = {}) {
     res.json(stats);
   });
 
-  // OpenAI proxy endpoints - NOW PROTECTED BY LICENSE CHECK
+  // Active provider proxy endpoints - protected by license check
   app.post('/v1/chat/completions', async (req, res) => {
     try {
       const response = await processChatCompletion(req.body);
       res.json(response);
     } catch (error) {
       console.error('Proxy error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(error?.status || 500).json({ error: error.message });
     }
   });
 
-  // OpenAI embeddings passthrough (used by OpenClaw memory)
+  // Embeddings passthrough for the active provider (OpenAI supported in V1)
   app.post('/v1/embeddings', async (req, res) => {
     try {
       const response = await processEmbeddings(req.body);
       res.json(response);
     } catch (error) {
       console.error('Embeddings proxy error:', error);
-      res.status(500).json({ error: error.message });
+      res.status(error?.status || 500).json({ error: error.message });
     }
   });
 
-  // New OpenAI responses API (for Codex/new CLI)
+  // Responses API (OpenAI supported in V1; other providers can return unsupported)
   app.post('/v1/responses', async (req, res) => {
     try {
       console.log('📝 Responses API called');
-      const openai = getOpenAI();
-      const response = await openai.responses.create(req.body);
+      const response = await processResponses(req.body);
       res.json(response);
     } catch (error) {
       console.error('Responses API error:', error);
@@ -135,8 +136,7 @@ async function startServer(port = 3000, settings = {}) {
   app.post('/responses', async (req, res) => {
     try {
       console.log('📝 Codex /responses endpoint called');
-      const openai = getOpenAI();
-      const response = await openai.responses.create(req.body);
+      const response = await processResponses(req.body);
       res.json(response);
     } catch (error) {
       console.error('Codex /responses error:', error);
@@ -154,8 +154,7 @@ async function startServer(port = 3000, settings = {}) {
   app.post('/backend-api/codex/responses', async (req, res) => {
     try {
       console.log('🤖 Codex CLI endpoint called');
-      const openai = getOpenAI();
-      const response = await openai.responses.create(req.body);
+      const response = await processResponses(req.body);
       res.json(response);
     } catch (error) {
       console.error('Codex CLI error:', error);
@@ -208,7 +207,7 @@ async function startServer(port = 3000, settings = {}) {
     } catch (error) {
       console.error('ChatGPT backend proxy error:', error);
       logToFile(`❌ Error: ${error.message}`);
-      res.status(500).json({ error: error.message });
+      res.status(error?.status || 500).json({ error: error.message });
     }
   });
 
@@ -227,6 +226,13 @@ async function startServer(port = 3000, settings = {}) {
   });
 }
 
+
+function updateSettings(settings = {}) {
+  configureProviders(settings);
+  const cacheConfig = configureCache(settings);
+  logToFile(`⚙️ Runtime settings updated: provider=${settings.provider || 'openai'}, ttl=${cacheConfig.ttlSeconds}s (${cacheConfig.source})`);
+}
+
 /**
  * Stop the proxy server
  * @returns {Promise<boolean>} - Success status
@@ -243,7 +249,7 @@ async function stopServer() {
       isRunning = false;
       server = null;
       resetStats(); // Reset stats on restart
-      resetClient(); // Reset OpenAI client so key is re-read fresh on next start
+      resetClients(); // Reset provider clients so keys are re-read fresh on next start
       resolve(true);
     });
   });
@@ -260,6 +266,7 @@ function getStatus() {
 // Export for Electron main process
 module.exports = {
   startServer,
+  updateSettings,
   stopServer,
   getStatus,
   getStats,

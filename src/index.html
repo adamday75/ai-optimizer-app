@@ -45,10 +45,19 @@
 
       <!-- API Key Section (shown after license activated) -->
       <section id="api-section" style="display:none;">
-        <h2>OpenAI API Key</h2>
+        <h2 id="api-section-heading">OpenAI API Key</h2>
         
+        <div id="provider-settings" class="settings-row">
+          <label for="provider-select">Provider:</label>
+          <select id="provider-select">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+          </select>
+          <p class="settings-note">One active provider is used by the localhost proxy at a time.</p>
+        </div>
+
         <div id="api-form">
-          <label for="api-key">API Key:</label>
+          <label id="api-key-label" for="api-key">OpenAI API Key:</label>
           <input 
             type="password" 
             id="api-key" 
@@ -62,8 +71,8 @@
         <div id="api-status" class="status-box" style="display:none;">
           <div class="status-indicator active"></div>
           <div class="status-text">
-            <strong>API Key Configured</strong>
-            <p>Ready to optimize your requests</p>
+            <strong id="api-status-title">OpenAI API Key Configured</strong>
+            <p id="api-status-message">Ready to optimize your OpenAI requests</p>
           </div>
         </div>
       </section>
@@ -107,8 +116,9 @@
         <ol>
           <li>Enter your license key (from welcome email)</li>
           <li>Activate license (validates with server)</li>
-          <li>Enter your OpenAI API key</li>
-          <li>All requests are optimized automatically</li>
+          <li>Choose OpenAI or Anthropic as your active provider</li>
+          <li>Enter the API key for that provider</li>
+          <li>All requests are optimized through the selected provider</li>
           <li>Save 20-40% on API costs!</li>
         </ol>
       </section>

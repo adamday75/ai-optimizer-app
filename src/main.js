@@ -24,8 +24,29 @@ let proxyState = {
 };
 
 const DEFAULT_SETTINGS = {
-  cacheTtlSeconds: 300
+  provider: 'openai',
+  cacheTtlSeconds: 300,
+  openaiApiKey: '',
+  anthropicApiKey: ''
 };
+
+function normalizeProvider(provider) {
+  return provider === 'anthropic' ? 'anthropic' : 'openai';
+}
+
+function getLegacyApiKey() {
+  const configPath = path.join(app.getPath('userData'), 'api-key.json');
+  try {
+    if (fs.existsSync(configPath)) {
+      const data = fs.readFileSync(configPath, 'utf8');
+      const config = JSON.parse(data);
+      return config.apiKey || '';
+    }
+  } catch (err) {
+    console.error('Error loading legacy API key:', err);
+  }
+  return '';
+}
 
 function getSettingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
@@ -34,6 +55,23 @@ function getSettingsPath() {
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function sanitizeSettings(settings = {}) {
+  const sanitized = {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+    provider: normalizeProvider(settings.provider),
+    cacheTtlSeconds: parsePositiveInt(settings.cacheTtlSeconds, DEFAULT_SETTINGS.cacheTtlSeconds),
+    openaiApiKey: settings.openaiApiKey || '',
+    anthropicApiKey: settings.anthropicApiKey || ''
+  };
+
+  if (!sanitized.openaiApiKey) {
+    sanitized.openaiApiKey = getLegacyApiKey();
+  }
+
+  return sanitized;
 }
 
 function getEffectiveCacheTtlSeconds(settings) {
@@ -52,14 +90,13 @@ function loadSettings() {
     if (fs.existsSync(settingsPath)) {
       const data = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
       settingsExists = true;
-      settings = {
-        ...settings,
-        ...data,
-        cacheTtlSeconds: parsePositiveInt(data.cacheTtlSeconds, DEFAULT_SETTINGS.cacheTtlSeconds)
-      };
+      settings = sanitizeSettings(data);
+    } else {
+      settings = sanitizeSettings(settings);
     }
   } catch (err) {
     console.error('Error loading settings:', err);
+    settings = sanitizeSettings(settings);
   }
 
   const envCacheTtlSeconds = process.env.AI_OPTIMIZER_CACHE_TTL_SECONDS
@@ -76,10 +113,17 @@ function loadSettings() {
 
 function saveSettings(nextSettings = {}) {
   const currentSettings = loadSettings();
-  const settings = {
+  const settings = sanitizeSettings({
     ...currentSettings,
-    cacheTtlSeconds: parsePositiveInt(nextSettings.cacheTtlSeconds, currentSettings.cacheTtlSeconds)
-  };
+    ...nextSettings,
+    provider: nextSettings.provider !== undefined ? nextSettings.provider : currentSettings.provider,
+    cacheTtlSeconds: nextSettings.cacheTtlSeconds !== undefined
+      ? parsePositiveInt(nextSettings.cacheTtlSeconds, currentSettings.cacheTtlSeconds)
+      : currentSettings.cacheTtlSeconds,
+    openaiApiKey: nextSettings.openaiApiKey !== undefined ? nextSettings.openaiApiKey : currentSettings.openaiApiKey,
+    anthropicApiKey: nextSettings.anthropicApiKey !== undefined ? nextSettings.anthropicApiKey : currentSettings.anthropicApiKey
+  });
+
   delete settings.effectiveCacheTtlSeconds;
   delete settings.cacheTtlSource;
   delete settings.envCacheTtlSeconds;
@@ -89,7 +133,9 @@ function saveSettings(nextSettings = {}) {
       ...settings,
       savedAt: new Date().toISOString()
     }, null, 2));
-    return loadSettings();
+    const reloaded = loadSettings();
+    proxyServer.updateSettings?.(reloaded);
+    return reloaded;
   } catch (err) {
     console.error('Error saving settings:', err);
     return null;
@@ -280,33 +326,22 @@ ipcMain.handle('get-proxy-status', () => {
   };
 });
 
-// Save API key to local storage
-function saveApiKey(apiKey) {
-  const configPath = path.join(app.getPath('userData'), 'api-key.json');
-  try {
-    fs.writeFileSync(configPath, JSON.stringify({
-      apiKey,
-      savedAt: new Date().toISOString()
-    }));
-    return true;
-  } catch (err) {
-    console.error('Error saving API key:', err);
-    return false;
-  }
+// Save API key to durable provider settings
+function saveApiKey(apiKey, provider) {
+  const activeProvider = normalizeProvider(provider || loadSettings().provider);
+  const keyField = activeProvider === 'anthropic' ? 'anthropicApiKey' : 'openaiApiKey';
+  return Boolean(saveSettings({ [keyField]: apiKey }));
 }
 
-// Load API key from local storage
-function loadApiKey() {
-  const configPath = path.join(app.getPath('userData'), 'api-key.json');
-  try {
-    if (fs.existsSync(configPath)) {
-      const data = fs.readFileSync(configPath, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Error loading API key:', err);
-  }
-  return null;
+// Load API key from durable provider settings
+function loadApiKey(provider) {
+  const settings = loadSettings();
+  const activeProvider = normalizeProvider(provider || settings.provider);
+  return {
+    apiKey: activeProvider === 'anthropic' ? settings.anthropicApiKey : settings.openaiApiKey,
+    provider: activeProvider,
+    savedAt: settings.savedAt || null
+  };
 }
 
 // Generate stable device fingerprint
@@ -368,12 +403,12 @@ function generateDeviceFingerprint() {
   return fingerprint;
 }
 
-ipcMain.handle('save-api-key', async (event, apiKey) => {
-  return saveApiKey(apiKey);
+ipcMain.handle('save-api-key', async (event, apiKey, provider) => {
+  return saveApiKey(apiKey, provider);
 });
 
-ipcMain.handle('load-api-key', async () => {
-  return loadApiKey();
+ipcMain.handle('load-api-key', async (event, provider) => {
+  return loadApiKey(provider);
 });
 
 ipcMain.handle('generate-device-fingerprint', async () => {

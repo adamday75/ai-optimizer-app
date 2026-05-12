@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateDeviceFingerprint: () => ipcRenderer.invoke('generate-device-fingerprint'),
   
   // API key management
-  saveApiKey: (key) => ipcRenderer.invoke('save-api-key', key),
-  loadApiKey: () => ipcRenderer.invoke('load-api-key'),
+  saveApiKey: (key, provider) => ipcRenderer.invoke('save-api-key', key, provider),
+  loadApiKey: (provider) => ipcRenderer.invoke('load-api-key', provider),
 
   // App settings
   loadSettings: () => ipcRenderer.invoke('load-settings'),
