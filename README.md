@@ -244,7 +244,7 @@ Release assets include:
 
 - Email: garyday216@gmail.com
 - GitHub Issues: [github.com/adamday75/ai-optimizer-app/issues](https://github.com/adamday75/ai-optimizer-app/issues)
-- Landing page: https://ai-optimizer-landing.vercel.app/
+- Landing page: https://ai-optimizer.org
 
 ---
 
