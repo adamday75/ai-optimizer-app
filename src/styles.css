@@ -25,18 +25,29 @@ body {
 header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 30px;
+  padding: 26px 30px 24px;
   text-align: center;
 }
 
-header h1 {
-  font-size: 2.5em;
-  margin-bottom: 10px;
+.brand-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-lockup {
+  display: block;
+  width: min(100%, 360px);
+  max-width: 100%;
+  height: auto;
 }
 
 .subtitle {
-  font-size: 1.1em;
-  opacity: 0.9;
+  font-size: 1.08em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.94);
 }
 
 main {
