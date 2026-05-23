@@ -146,11 +146,14 @@ function saveSettings(nextSettings = {}) {
 }
 
 // Logging helper for debugging
-const logFile = path.join(__dirname, '../proxy-debug.log');
+function getLogFilePath() {
+  return path.join(app.getPath('userData'), 'proxy-debug.log');
+}
+
 function logToFile(message) {
   try {
     const timestamp = new Date().toISOString();
-    fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
+    fs.appendFileSync(getLogFilePath(), `[${timestamp}] ${message}\n`);
   } catch (err) {
     console.error('Failed to write to log:', err);
   }
