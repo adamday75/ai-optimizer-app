@@ -22,10 +22,32 @@ const apiStatusMessage = document.getElementById('api-status-message');
 const versionSpan = document.getElementById('version');
 
 const PROVIDERS = {
-  openai: { label: 'OpenAI', placeholder: 'sk-...', keyField: 'openaiApiKey' },
-  anthropic: { label: 'Anthropic', placeholder: 'sk-ant-...', keyField: 'anthropicApiKey' }
+  openai: {
+    label: 'OpenAI',
+    placeholder: 'sk-...',
+    keyField: 'openaiApiKey',
+    statusMessage: 'Ready to optimize your OpenAI requests'
+  },
+  anthropic: {
+    label: 'Anthropic',
+    placeholder: 'sk-ant-...',
+    keyField: 'anthropicApiKey',
+    statusMessage: 'Ready to optimize your Anthropic requests'
+  },
+  google: {
+    label: 'Google Gemini',
+    placeholder: 'AIza...',
+    keyField: 'googleApiKey',
+    statusMessage: 'Ready to optimize your Google Gemini requests'
+  }
 };
-let appSettings = { provider: 'openai', cacheTtlSeconds: 300, openaiApiKey: '', anthropicApiKey: '' };
+let appSettings = {
+  provider: 'openai',
+  cacheTtlSeconds: 300,
+  openaiApiKey: '',
+  anthropicApiKey: '',
+  googleApiKey: ''
+};
 
 // Proxy Section Elements (V2)
 const proxySection = document.getElementById('proxy-section');
@@ -37,7 +59,6 @@ const proxyPort = document.getElementById('proxy-port');
 const proxyRequests = document.getElementById('proxy-requests');
 const proxyCacheHits = document.getElementById('proxy-cache-hits');
 const proxyCacheRate = document.getElementById('proxy-cache-rate');
-const proxySaved = document.getElementById('proxy-saved');
 const cacheTtlSelect = document.getElementById('cache-ttl-select');
 const cacheTtlNote = document.getElementById('cache-ttl-note');
 
@@ -124,7 +145,7 @@ function updateProviderUi() {
   apiKeyInput.value = savedKey;
   saveApiBtn.textContent = `Save ${provider.label} Key`;
   apiStatusTitle.textContent = `${provider.label} API Key Configured`;
-  apiStatusMessage.textContent = `Ready to optimize your ${provider.label} requests`;
+  apiStatusMessage.textContent = provider.statusMessage;
   apiStatus.style.display = savedKey ? 'flex' : 'none';
 }
 
@@ -160,7 +181,6 @@ function applyProxyStatus(status = {}) {
         ? ((status.stats.cacheHits / status.stats.requests) * 100).toFixed(1)
         : '0';
       proxyCacheRate.textContent = rate;
-      proxySaved.textContent = Number(status.stats.totalSaved || 0).toFixed(4);
     }
   }
 }
@@ -294,7 +314,7 @@ async function handleProviderChange() {
   }
 
   appSettings = { ...appSettings, ...settings };
-  updateProviderUi();
+  await loadActiveProviderKey();
   showMessage(`${getActiveProviderLabel()} selected. The proxy will use this provider.`, 'success');
 }
 

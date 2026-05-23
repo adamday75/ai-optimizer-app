@@ -1,18 +1,21 @@
 const openaiProvider = require('./openai.js');
 const anthropicProvider = require('./anthropic.js');
+const googleProvider = require('./google.js');
 const { generateCacheKey, getCached, setCached, getDefaultTtlSeconds } = require('./cache.js');
 const { recommendModel, calculateCost } = require('./routing.js');
 
 const providers = {
   openai: openaiProvider,
-  anthropic: anthropicProvider
+  anthropic: anthropicProvider,
+  google: googleProvider
 };
 
 let activeSettings = {
   provider: 'openai',
   cacheTtlSeconds: 300,
   openaiApiKey: '',
-  anthropicApiKey: ''
+  anthropicApiKey: '',
+  googleApiKey: ''
 };
 
 let stats = {
@@ -64,6 +67,8 @@ async function processChatCompletion(requestBody) {
   const provider = providers[providerId];
   const cacheEnabled = true;
   const smartRouting = false;
+
+  provider.validateSettings?.(activeSettings);
 
   const cacheKey = generateCacheKey(requestBody, providerId);
   if (cacheEnabled) {

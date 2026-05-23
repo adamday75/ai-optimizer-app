@@ -1,22 +1,22 @@
-# AI Optimizer v2.2.0
+# AI Optimizer v2.3.0
 
-**A local desktop proxy that helps you control, cache, and optimize LLM API traffic with support for both OpenAI and Anthropic.**
+**A local desktop proxy that helps you control, cache, and optimize LLM API traffic with support for OpenAI, Anthropic, and Google Gemini.**
 
 ---
 
-## What’s New in v2.2.0
+## What’s New in v2.3.0
 
-Released May 12, 2026.
+Released May 23, 2026.
 
 ### New in this release
-- Added **Anthropic provider support**
-- Added **provider selection** in the desktop UI
-- Added **provider-specific API key handling**
-- Preserved the local proxy workflow on `localhost:3000`
-- Preserved request caching with provider-aware cache separation
+- Added **Google Gemini provider support**
+- Added **Google API key storage** in the desktop UI
+- Preserved **one active provider at a time** behavior with saved keys per provider
+- Kept the local proxy workflow on `localhost:3000`
+- Kept provider-aware cache separation
 - Included updated **Chrome extension**
 
-AI Optimizer now supports **OpenAI + Anthropic** with one active provider at a time.
+AI Optimizer now supports **OpenAI + Anthropic + Google Gemini** with one active provider at a time.
 
 [Download the latest release](https://github.com/adamday75/ai-optimizer-app/releases/latest)
 
@@ -43,21 +43,24 @@ Desktop builds are available for **macOS, Windows, and Linux**.
 - Local proxy server on `localhost:3000`
 - **OpenAI** provider support
 - **Anthropic** provider support
+- **Google Gemini** provider support
 - OpenAI Chat Completions support
 - OpenAI Responses API support
 - OpenAI Embeddings passthrough support
 - Anthropic chat support through the local proxy
 - Provider selection in the app UI
 - Provider-specific API key storage
+- One active provider selection with saved keys for each provider
 - License validation enforcement at the proxy layer
 - Real-time stats in the desktop UI
 - Start/Stop proxy controls
 - Chrome extension download
 
-### Current Anthropic scope
+### Current provider scope
 - `POST /v1/chat/completions` works when Anthropic is selected
-- Anthropic support in **v2.2.0** is focused on chat completions
-- When Anthropic is active, embeddings and responses are not supported in this release
+- `POST /v1/chat/completions` works when Google Gemini is selected
+- Anthropic and Google support in **v2.3.0** are intentionally focused on chat completions
+- When Anthropic or Google is active, embeddings and responses are not supported in this release
 
 ### In progress / planned
 - automatic model/provider routing
@@ -91,13 +94,13 @@ Get current installers from the GitHub Releases page:
 ### Linux
 **AppImage**
 ```bash
-chmod +x AI\ Optimizer-2.2.0.AppImage
-./AI\ Optimizer-2.2.0.AppImage
+chmod +x AI\ Optimizer-2.3.0.AppImage
+./AI\ Optimizer-2.3.0.AppImage
 ```
 
 **DEB package**
 ```bash
-sudo apt install ./ai-optimizer_2.2.0_amd64.deb
+sudo apt install ./ai-optimizer_2.3.0_amd64.deb
 ```
 
 ### Chrome Extension
@@ -114,8 +117,8 @@ A downloadable Chrome extension zip is included in the release assets.
 - Confirm the license status is active
 
 ### 2. Choose your provider
-- Select **OpenAI** or **Anthropic** in the app
-- The app uses **one active provider at a time**
+- Select **OpenAI**, **Anthropic**, or **Google Gemini** in the app
+- The app uses **one active provider at a time** while still saving keys per provider
 
 ### 3. Save the API key for that provider
 - Paste the API key into the app
@@ -143,6 +146,11 @@ Use `http://localhost:3000` in place of the upstream API base URL where appropri
 - `GET /stats`
 
 ### When Anthropic is active
+- `POST /v1/chat/completions`
+- `GET /health`
+- `GET /stats`
+
+### When Google Gemini is active
 - `POST /v1/chat/completions`
 - `GET /health`
 - `GET /stats`
@@ -175,6 +183,14 @@ curl -sS http://localhost:3000/v1/chat/completions \
 curl -sS http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+## Example Google Gemini Chat Check
+
+```bash
+curl -sS http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gemini-2.5-flash","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
 ## Example OpenAI Embeddings Check
@@ -214,6 +230,12 @@ Check:
 Make sure you are using a valid Anthropic model ID, such as:
 - `claude-sonnet-4-6`
 
+### Google request returns an auth or model error
+Check:
+- the saved Google API key is valid
+- the requested model is available for your Gemini API account
+- you are using `POST /v1/chat/completions` only for Google in this release
+
 ### macOS app will not open
 Run:
 ```bash
@@ -229,7 +251,7 @@ Cache hits depend on repeated requests matching closely, including provider, mod
 
 ### Latest release
 - Visit: [GitHub Releases](https://github.com/adamday75/ai-optimizer-app/releases/latest)
-- Current release: **v2.2.0**
+- Current release: **v2.3.0**
 
 Release assets include:
 - macOS zip
@@ -256,6 +278,7 @@ Release assets include:
 - NodeCache
 - OpenAI API
 - Anthropic API
+- Google Gemini API
 
 ---
 

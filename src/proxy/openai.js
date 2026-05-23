@@ -25,6 +25,10 @@ module.exports = {
   id: 'openai',
   label: 'OpenAI',
 
+  validateSettings(settings = {}) {
+    getOpenAI(settings);
+  },
+
   resetClient() {
     openaiClient = null;
     openaiClientKey = null;
