@@ -27,11 +27,12 @@ const DEFAULT_SETTINGS = {
   provider: 'openai',
   cacheTtlSeconds: 300,
   openaiApiKey: '',
-  anthropicApiKey: ''
+  anthropicApiKey: '',
+  googleApiKey: ''
 };
 
 function normalizeProvider(provider) {
-  return provider === 'anthropic' ? 'anthropic' : 'openai';
+  return ['openai', 'anthropic', 'google'].includes(provider) ? provider : 'openai';
 }
 
 function getLegacyApiKey() {
@@ -64,7 +65,8 @@ function sanitizeSettings(settings = {}) {
     provider: normalizeProvider(settings.provider),
     cacheTtlSeconds: parsePositiveInt(settings.cacheTtlSeconds, DEFAULT_SETTINGS.cacheTtlSeconds),
     openaiApiKey: settings.openaiApiKey || '',
-    anthropicApiKey: settings.anthropicApiKey || ''
+    anthropicApiKey: settings.anthropicApiKey || '',
+    googleApiKey: settings.googleApiKey || ''
   };
 
   if (!sanitized.openaiApiKey) {
@@ -121,7 +123,8 @@ function saveSettings(nextSettings = {}) {
       ? parsePositiveInt(nextSettings.cacheTtlSeconds, currentSettings.cacheTtlSeconds)
       : currentSettings.cacheTtlSeconds,
     openaiApiKey: nextSettings.openaiApiKey !== undefined ? nextSettings.openaiApiKey : currentSettings.openaiApiKey,
-    anthropicApiKey: nextSettings.anthropicApiKey !== undefined ? nextSettings.anthropicApiKey : currentSettings.anthropicApiKey
+    anthropicApiKey: nextSettings.anthropicApiKey !== undefined ? nextSettings.anthropicApiKey : currentSettings.anthropicApiKey,
+    googleApiKey: nextSettings.googleApiKey !== undefined ? nextSettings.googleApiKey : currentSettings.googleApiKey
   });
 
   delete settings.effectiveCacheTtlSeconds;
@@ -143,11 +146,14 @@ function saveSettings(nextSettings = {}) {
 }
 
 // Logging helper for debugging
-const logFile = path.join(__dirname, '../proxy-debug.log');
+function getLogFilePath() {
+  return path.join(app.getPath('userData'), 'proxy-debug.log');
+}
+
 function logToFile(message) {
   try {
     const timestamp = new Date().toISOString();
-    fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
+    fs.appendFileSync(getLogFilePath(), `[${timestamp}] ${message}\n`);
   } catch (err) {
     console.error('Failed to write to log:', err);
   }
@@ -248,6 +254,7 @@ async function validateLicense(licenseKey) {
       return { 
         valid: true, 
         email: data.email,
+        lastChecked: licenseState.lastChecked,
         deviceCount: data.deviceCount,
         deviceLimit: data.deviceLimit,
         plan: data.plan
@@ -327,9 +334,16 @@ ipcMain.handle('get-proxy-status', () => {
 });
 
 // Save API key to durable provider settings
+function getProviderKeyField(provider) {
+  const activeProvider = normalizeProvider(provider);
+  if (activeProvider === 'anthropic') return 'anthropicApiKey';
+  if (activeProvider === 'google') return 'googleApiKey';
+  return 'openaiApiKey';
+}
+
 function saveApiKey(apiKey, provider) {
   const activeProvider = normalizeProvider(provider || loadSettings().provider);
-  const keyField = activeProvider === 'anthropic' ? 'anthropicApiKey' : 'openaiApiKey';
+  const keyField = getProviderKeyField(activeProvider);
   return Boolean(saveSettings({ [keyField]: apiKey }));
 }
 
@@ -338,7 +352,7 @@ function loadApiKey(provider) {
   const settings = loadSettings();
   const activeProvider = normalizeProvider(provider || settings.provider);
   return {
-    apiKey: activeProvider === 'anthropic' ? settings.anthropicApiKey : settings.openaiApiKey,
+    apiKey: settings[getProviderKeyField(activeProvider)] || '',
     provider: activeProvider,
     savedAt: settings.savedAt || null
   };

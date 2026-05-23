@@ -18,7 +18,7 @@ const MODEL_COSTS = {
 
 /**
  * Calculate cost for a model
- * @param {string} provider - 'openai' or 'anthropic'
+ * @param {string} provider - 'openai', 'anthropic', or 'google'
  * @param {string} model - Model name
  * @param {number} inputTokens - Input token count
  * @param {number} outputTokens - Output token count
@@ -76,7 +76,7 @@ module.exports.analyzeComplexity = function (requestBody) {
 /**
  * Recommend model based on complexity and preferred provider
  * @param {Object} requestBody - API request body
- * @param {string} provider - 'openai' or 'anthropic'
+ * @param {string} provider - 'openai', 'anthropic', or 'google'
  * @param {string} requestedModel - Original model requested (fallback if needed)
  * @returns {Object} Recommendation
  */

@@ -9,8 +9,10 @@
 <body>
   <div class="container">
     <header>
-      <h1>🚀 AI Optimizer</h1>
-      <p class="subtitle">Save 20-40% on OpenAI API costs</p>
+      <div class="brand-header">
+        <img class="brand-lockup" src="assets/ai-optimizer-logo-horizontal-lockup.png" alt="AI Optimizer">
+        <p class="subtitle">Local-first AI caching</p>
+      </div>
     </header>
 
     <main>
@@ -52,6 +54,7 @@
           <select id="provider-select">
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
+            <option value="google">Google Gemini</option>
           </select>
           <p class="settings-note">One active provider is used by the localhost proxy at a time.</p>
         </div>
@@ -105,7 +108,6 @@
             <p>Port: <span id="proxy-port">3000</span></p>
             <p>Requests: <span id="proxy-requests">0</span></p>
             <p>Cache Hits: <span id="proxy-cache-hits">0</span> (<span id="proxy-cache-rate">0</span>%)</p>
-            <p>Total Saved: $<span id="proxy-saved">0.00</span></p>
           </div>
         </div>
       </section>
@@ -116,7 +118,7 @@
         <ol>
           <li>Enter your license key (from welcome email)</li>
           <li>Activate license (validates with server)</li>
-          <li>Choose OpenAI or Anthropic as your active provider</li>
+          <li>Choose OpenAI, Anthropic, or Google Gemini as your active provider</li>
           <li>Enter the API key for that provider</li>
           <li>All requests are optimized through the selected provider</li>
           <li>Save 20-40% on API costs!</li>

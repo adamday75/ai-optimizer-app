@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const NodeCache = require('node-cache');
 
 const DEFAULT_CACHE_TTL_SECONDS = 300;
@@ -66,7 +67,8 @@ module.exports.generateCacheKey = function (requestBody, provider) {
     temperature: requestBody.temperature,
     max_tokens: requestBody.max_tokens
   });
-  return Buffer.from(keyData).toString('base64').substring(0, 64);
+
+  return crypto.createHash('sha256').update(keyData).digest('hex');
 }
 
 /**

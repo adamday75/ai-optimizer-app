@@ -79,6 +79,12 @@ module.exports = {
   id: 'anthropic',
   label: 'Anthropic',
 
+  validateSettings(settings = {}) {
+    if (!getApiKey(settings)) {
+      throw new Error('Anthropic API key not configured. Please enter it in the app.');
+    }
+  },
+
   resetClient() {
     // fetch-based provider; no persistent client to reset
   },
