@@ -1,14 +1,34 @@
 // Proxy Server - Express wrapper for active AI provider
 const express = require('express');
-const { app } = require('electron');
 const { processChatCompletion, processEmbeddings, processResponses, getStats, resetStats, resetClients, configureProviders } = require('./provider-router.js');
 const { configureCache } = require('./cache.js');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+
+let electronApp = null;
+try {
+  const electron = require('electron');
+  if (electron && typeof electron === 'object' && electron.app) {
+    electronApp = electron.app;
+  }
+} catch (error) {
+  electronApp = null;
+}
 
 // Log file for debugging
 function getLogFilePath() {
-  return path.join(app.getPath('userData'), 'proxy-debug.log');
+  if (electronApp?.getPath) {
+    try {
+      return path.join(electronApp.getPath('userData'), 'proxy-debug.log');
+    } catch (error) {
+      // Fall back to the standard config directory when Electron app paths are unavailable.
+    }
+  }
+
+  const fallbackDir = process.env.AI_OPTIMIZER_USER_DATA_DIR || path.join(os.homedir(), '.config', 'ai-optimizer');
+  fs.mkdirSync(fallbackDir, { recursive: true });
+  return path.join(fallbackDir, 'proxy-debug.log');
 }
 
 function logToFile(message) {
