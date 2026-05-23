@@ -1,15 +1,19 @@
 // Proxy Server - Express wrapper for active AI provider
 const express = require('express');
+const { app } = require('electron');
 const { processChatCompletion, processEmbeddings, processResponses, getStats, resetStats, resetClients, configureProviders } = require('./provider-router.js');
 const { configureCache } = require('./cache.js');
 const fs = require('fs');
 const path = require('path');
 
 // Log file for debugging
-const logFile = path.join(__dirname, '../../proxy-debug.log');
+function getLogFilePath() {
+  return path.join(app.getPath('userData'), 'proxy-debug.log');
+}
+
 function logToFile(message) {
   const timestamp = new Date().toISOString();
-  fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
+  fs.appendFileSync(getLogFilePath(), `[${timestamp}] ${message}\n`);
 }
 
 let server = null;
