@@ -235,7 +235,12 @@ function showLicenseActive(state) {
   statusIndicator.classList.add('active');
   statusText.textContent = 'License Active';
   statusEmail.textContent = state.email || '';
-  lastChecked.textContent = `Last checked: ${new Date(state.lastChecked).toLocaleString()}`;
+
+  const parsedLastChecked = state.lastChecked ? new Date(state.lastChecked) : null;
+  const hasValidLastChecked = parsedLastChecked && !Number.isNaN(parsedLastChecked.getTime());
+  lastChecked.textContent = hasValidLastChecked
+    ? `Last checked: ${parsedLastChecked.toLocaleString()}`
+    : 'Last checked: just now';
   
   // Show device count if available
   if (state.deviceCount !== undefined) {

@@ -251,6 +251,7 @@ async function validateLicense(licenseKey) {
       return { 
         valid: true, 
         email: data.email,
+        lastChecked: licenseState.lastChecked,
         deviceCount: data.deviceCount,
         deviceLimit: data.deviceLimit,
         plan: data.plan
