@@ -59,6 +59,8 @@ const proxyPort = document.getElementById('proxy-port');
 const proxyRequests = document.getElementById('proxy-requests');
 const proxyCacheHits = document.getElementById('proxy-cache-hits');
 const proxyCacheRate = document.getElementById('proxy-cache-rate');
+const proxyPartialHits = document.getElementById('proxy-partial-hits');
+const proxyTokensReused = document.getElementById('proxy-tokens-reused');
 const cacheTtlSelect = document.getElementById('cache-ttl-select');
 const cacheTtlNote = document.getElementById('cache-ttl-note');
 
@@ -175,12 +177,21 @@ function applyProxyStatus(status = {}) {
   if (isRunning) {
     proxyPort.textContent = status.port || 3000;
     if (status.stats) {
+      const isOpenAI = status.stats.provider === 'openai';
       proxyRequests.textContent = status.stats.requests;
       proxyCacheHits.textContent = status.stats.cacheHits;
       const rate = status.stats.requests > 0
         ? ((status.stats.cacheHits / status.stats.requests) * 100).toFixed(1)
         : '0';
       proxyCacheRate.textContent = rate;
+      proxyPartialHits.textContent = status.stats.partialCacheHits || 0;
+      proxyTokensReused.textContent = status.stats.promptTokensReused || 0;
+      // Partial cache hits and token reuse are OpenAI-only features; hide for other providers.
+      const openAIOnlyDisplay = isOpenAI ? '' : 'none';
+      const partialHitsRow = document.getElementById('proxy-partial-hits-row');
+      const tokensReusedRow = document.getElementById('proxy-tokens-reused-row');
+      if (partialHitsRow) partialHitsRow.style.display = openAIOnlyDisplay;
+      if (tokensReusedRow) tokensReusedRow.style.display = openAIOnlyDisplay;
     }
   }
 }

@@ -107,7 +107,9 @@
             <strong>Proxy Running</strong>
             <p>Port: <span id="proxy-port">3000</span></p>
             <p>Requests: <span id="proxy-requests">0</span></p>
-            <p>Cache Hits: <span id="proxy-cache-hits">0</span> (<span id="proxy-cache-rate">0</span>%)</p>
+            <p>Exact Cache Hits: <span id="proxy-cache-hits">0</span> (<span id="proxy-cache-rate">0</span>%)</p>
+            <p id="proxy-partial-hits-row">Partial Hits (OpenAI): <span id="proxy-partial-hits">0</span></p>
+            <p id="proxy-tokens-reused-row">Tokens Reused (OpenAI): <span id="proxy-tokens-reused">0</span></p>
           </div>
         </div>
       </section>
@@ -121,7 +123,7 @@
           <li>Choose OpenAI, Anthropic, or Google Gemini as your active provider</li>
           <li>Enter the API key for that provider</li>
           <li>All requests are optimized through the selected provider</li>
-          <li>Save 20-40% on API costs!</li>
+          <li>Cut costs on repeated requests via local caching; OpenAI users may also see savings from prompt-prefix caching</li>
         </ol>
       </section>
     </main>

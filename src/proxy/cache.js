@@ -33,8 +33,11 @@ function createCache(ttlSeconds) {
   });
 }
 
-// In-memory cache for MVP - configurable via env override or saved app settings
+// Exact response cache — full request fingerprint → full response
 let cache = createCache(cacheTtlSeconds);
+
+// Prompt prefix cache — tracks repeated stable prefixes for partial reuse detection
+let promptCache = createCache(cacheTtlSeconds);
 
 module.exports.configureCache = function (settings = {}) {
   const nextTtlSeconds = resolveCacheTtlSeconds(settings);
@@ -44,6 +47,9 @@ module.exports.configureCache = function (settings = {}) {
     cache.flushAll();
     cache.close();
     cache = createCache(cacheTtlSeconds);
+    promptCache.flushAll();
+    promptCache.close();
+    promptCache = createCache(cacheTtlSeconds);
   }
 
   return {
@@ -117,7 +123,7 @@ module.exports.getStats = function () {
 }
 
 /**
- * Clear all cache
+ * Clear exact response cache
  */
 module.exports.clearCache = function () {
   cache.flushAll();
@@ -126,5 +132,107 @@ module.exports.clearCache = function () {
 module.exports.getDefaultTtlSeconds = function () {
   return cacheTtlSeconds;
 }
+
+/**
+ * Generate a prompt prefix key.
+ * The prefix is everything except the final user message — stable context like
+ * system prompts, documents, and prior turns that repeats across automation runs.
+ *
+ * Returns null if there is no stable prefix to track (single-turn requests).
+ *
+ * @param {Object} requestBody
+ * @param {string} provider
+ * @returns {string|null}
+ */
+module.exports.generatePromptPrefixKey = function (requestBody, provider) {
+  // Bypass prefix tracking for dynamic/structured request shapes — tools, function calling,
+  // and response_format make the prefix signal unreliable (the structured shape itself
+  // affects caching eligibility but is not included in the prefix hash).
+  if (requestBody.tools || requestBody.functions || requestBody.tool_choice || requestBody.response_format) {
+    return null;
+  }
+
+  const messages = requestBody.messages || [];
+
+  // Bypass for multimodal requests — array-valued message content (images, audio, documents,
+  // mixed text+media) makes prefix hashing unreliable because content encoding and ordering
+  // affect cache eligibility in ways that are not captured by a plain text prefix.
+  // Prefer bypassing borderline shapes over claiming prefix reuse too aggressively.
+  if (messages.some(msg => Array.isArray(msg.content))) {
+    return null;
+  }
+
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user') {
+      lastUserIdx = i;
+      break;
+    }
+  }
+
+  // Need at least one message before the last user message to have a meaningful prefix
+  if (lastUserIdx <= 0) return null;
+
+  const prefixMessages = messages.slice(0, lastUserIdx);
+
+  const keyData = JSON.stringify({
+    provider,
+    model: requestBody.model,
+    prefixMessages
+  });
+
+  return 'pfx:' + crypto.createHash('sha256').update(keyData).digest('hex');
+};
+
+/**
+ * Get an existing prompt prefix cache entry.
+ * @param {string} key
+ * @returns {{ firstSeenAt: number, lastSeenAt: number, hitCount: number, promptTokens: number }|null}
+ */
+module.exports.getPromptCacheEntry = function (key) {
+  return promptCache.get(key) || null;
+};
+
+/**
+ * Record a prompt prefix observation.
+ * Creates a new entry on first sighting; increments hitCount on subsequent ones.
+ *
+ * @param {string} key
+ * @param {number} promptTokens - Total prompt tokens from the latest response (for context)
+ */
+module.exports.recordPromptCacheHit = function (key, promptTokens) {
+  const existing = promptCache.get(key);
+  if (existing) {
+    existing.hitCount++;
+    existing.lastSeenAt = Date.now();
+    if (promptTokens) existing.promptTokens = promptTokens;
+    promptCache.set(key, existing);
+  } else {
+    promptCache.set(key, {
+      firstSeenAt: Date.now(),
+      lastSeenAt: Date.now(),
+      hitCount: 1,
+      promptTokens: promptTokens || 0
+    });
+  }
+};
+
+/**
+ * Get prompt prefix cache stats.
+ * @returns {{ totalPrefixes: number, ttlSeconds: number }}
+ */
+module.exports.getPromptCacheStats = function () {
+  return {
+    totalPrefixes: promptCache.keys().length,
+    ttlSeconds: cacheTtlSeconds
+  };
+};
+
+/**
+ * Clear prompt prefix cache.
+ */
+module.exports.clearPromptCache = function () {
+  promptCache.flushAll();
+};
 
 // All functions exported via module.exports above
