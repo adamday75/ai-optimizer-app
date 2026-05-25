@@ -98,10 +98,10 @@ async function init() {
   try {
     const version = window.electronAPI?.getAppVersion
       ? await window.electronAPI.getAppVersion()
-      : '2.1.3';
-    versionSpan.textContent = version || '2.1.3';
+      : '2.4.0';
+    versionSpan.textContent = version || '2.4.0';
   } catch (err) {
-    versionSpan.textContent = '2.1.3';
+    versionSpan.textContent = '2.4.0';
   }
 }
 
