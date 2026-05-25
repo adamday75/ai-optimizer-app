@@ -1,24 +1,30 @@
-# AI Optimizer v2.3.0
+# AI Optimizer v2.4.0
 
-**A local desktop proxy that helps you control, cache, and optimize LLM API traffic with support for OpenAI, Anthropic, and Google Gemini.**
+**A local-first desktop proxy that helps you control, cache, and optimize LLM API traffic with support for OpenAI, Anthropic, and Google Gemini.**
 
 ---
 
-## What’s New in v2.3.0
+## What’s New in v2.4.0
 
-Released May 23, 2026.
+Released May 25, 2026.
 
 ### New in this release
-- Added **Google Gemini provider support**
-- Added **Google API key storage** in the desktop UI
-- Preserved **one active provider at a time** behavior with saved keys per provider
-- Kept the local proxy workflow on `localhost:3000`
-- Kept provider-aware cache separation
-- Included updated **Chrome extension**
+- Added **truthful OpenAI partial prompt caching visibility**
+- Added **Partial Hits (OpenAI)** in the desktop stats
+- Added **Tokens Reused (OpenAI)** in the desktop stats
+- Kept **exact cache hits** working as before
+- Updated the app version and footer display to **v2.4.0**
 
-AI Optimizer now supports **OpenAI + Anthropic + Google Gemini** with one active provider at a time.
+AI Optimizer now shows provider-side OpenAI prompt reuse **only when OpenAI reports real reused tokens**. If OpenAI does not report reuse, AI Optimizer does not fake a partial hit.
+
+- **Exact Cache Hits** = request fully served from local cache
+- **Partial Hits (OpenAI)** = OpenAI reported real provider-side reused prompt tokens
+- **Tokens Reused (OpenAI)** = total reused prompt tokens reported by OpenAI
 
 [Download the latest release](https://github.com/adamday75/ai-optimizer-app/releases/latest)
+
+For a simpler customer-facing guide, see:
+- [Install & setup guide](https://ai-optimizer.org/install)
 
 ---
 
@@ -31,7 +37,7 @@ It helps you:
 - route requests through a local endpoint you control
 - switch providers from a simple desktop UI
 - enforce license access before proxy usage
-- track request volume, cache hits, and estimated savings
+- track request volume, exact cache hits, and OpenAI partial prompt reuse
 
 Desktop builds are available for **macOS, Windows, and Linux**.
 
@@ -57,16 +63,19 @@ Desktop builds are available for **macOS, Windows, and Linux**.
 - Chrome extension download
 
 ### Current provider scope
+- **OpenAI** remains the broadest lane
 - `POST /v1/chat/completions` works when Anthropic is selected
 - `POST /v1/chat/completions` works when Google Gemini is selected
-- Anthropic and Google support in **v2.3.0** are intentionally focused on chat completions
+- Anthropic support is intentionally focused on chat completions
+- Google Gemini support is intentionally narrower and focused on repeat-heavy chat-completions style workflows in this app lane
 - When Anthropic or Google is active, embeddings and responses are not supported in this release
 
-### In progress / planned
-- automatic model/provider routing
-- deeper cache controls
-- expanded request visibility and history
-- more provider coverage over time
+### Best fit
+- repeat-heavy scripts
+- local tools
+- agent workflows
+- cron jobs and automations
+- workflows that hit the same API patterns over and over
 
 ---
 
@@ -75,6 +84,10 @@ Desktop builds are available for **macOS, Windows, and Linux**.
 Get current installers from the GitHub Releases page:
 
 [https://github.com/adamday75/ai-optimizer-app/releases/latest](https://github.com/adamday75/ai-optimizer-app/releases/latest)
+
+If you want a cleaner end-user walkthrough, use:
+
+[https://ai-optimizer.org/install](https://ai-optimizer.org/install)
 
 ### macOS
 1. Download the current macOS archive from Releases
@@ -90,17 +103,18 @@ Get current installers from the GitHub Releases page:
 1. Download the latest Windows build from Releases
 2. Run the installer or packaged executable
 3. Launch AI Optimizer
+4. If Windows Defender Firewall asks for permission, allowing **Private networks** is usually enough because the app runs a local proxy on `localhost:3000`
 
 ### Linux
 **AppImage**
 ```bash
-chmod +x AI\ Optimizer-2.3.0.AppImage
-./AI\ Optimizer-2.3.0.AppImage
+chmod +x AI\ Optimizer-2.4.0.AppImage
+./AI\ Optimizer-2.4.0.AppImage
 ```
 
 **DEB package**
 ```bash
-sudo apt install ./ai-optimizer_2.3.0_amd64.deb
+sudo apt install ./ai-optimizer_2.4.0_amd64.deb
 ```
 
 ### Chrome Extension
@@ -132,6 +146,12 @@ A downloadable Chrome extension zip is included in the release assets.
 ### 5. Point your tools at the local proxy
 Use `http://localhost:3000` in place of the upstream API base URL where appropriate for your workflow.
 
+Common example:
+
+```bash
+OPENAI_BASE_URL=http://localhost:3000/v1
+```
+
 ---
 
 ## Supported Endpoints
@@ -157,48 +177,64 @@ Use `http://localhost:3000` in place of the upstream API base URL where appropri
 
 ---
 
-## Example Health Check
+## Example Checks
 
+### Health check
 ```bash
 curl -sS http://localhost:3000/health
 ```
 
 Expected response:
-
 ```json
 {"status":"ok","running":true}
 ```
 
-## Example OpenAI Chat Check
+### Stats check
+```bash
+curl -sS http://localhost:3000/stats
+```
 
+### OpenAI chat check
 ```bash
 curl -sS http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-## Example Anthropic Chat Check
+### OpenAI exact-cache check
+Run the same request twice, then inspect stats:
 
+```bash
+curl -sS http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Reply with exactly: CACHE_OK"}]}'
+
+curl -sS http://localhost:3000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Reply with exactly: CACHE_OK"}]}'
+
+curl -sS http://localhost:3000/stats
+```
+
+### Anthropic chat check
 ```bash
 curl -sS http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-## Example Google Gemini Chat Check
-
+### Google Gemini chat check
 ```bash
 curl -sS http://localhost:3000/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"gemini-2.5-flash","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-## Example OpenAI Embeddings Check
-
+### OpenAI embeddings check
 ```bash
 curl -sS http://localhost:3000/v1/embeddings \
   -H "Content-Type: application/json" \
-  -d '{"model":"text-embedding-3-small","input":"hello from openclaw memory"}'
+  -d '{"model":"text-embedding-3-small","input":"hello from ai optimizer"}'
 ```
 
 ---
@@ -226,6 +262,9 @@ Check:
 - the correct provider API key is saved
 - port `3000` is not already occupied by another process
 
+### OpenAI partial hits are still zero
+That can be normal. Partial Hits (OpenAI) only move when OpenAI reports real reused prompt tokens.
+
 ### Anthropic request returns model error
 Make sure you are using a valid Anthropic model ID, such as:
 - `claude-sonnet-4-6`
@@ -242,8 +281,11 @@ Run:
 xattr -r -d com.apple.quarantine /Applications/AI\ Optimizer.app
 ```
 
-### No cache hits yet
-Cache hits depend on repeated requests matching closely, including provider, model, and input parameters.
+### Windows shows a Defender prompt
+That is expected on some machines because AI Optimizer runs a local proxy. In most cases, allowing it on **Private networks** is enough.
+
+### No exact cache hits yet
+Exact cache hits depend on repeated requests matching closely, including provider, model, and input parameters.
 
 ---
 
@@ -251,13 +293,13 @@ Cache hits depend on repeated requests matching closely, including provider, mod
 
 ### Latest release
 - Visit: [GitHub Releases](https://github.com/adamday75/ai-optimizer-app/releases/latest)
-- Current release: **v2.3.0**
+- Current release: **v2.4.0**
 
 Release assets include:
 - macOS zip
 - Linux AppImage
 - Linux `.deb`
-- Windows build
+- Windows installer / packaged build
 - Chrome extension zip
 
 ---
@@ -267,6 +309,7 @@ Release assets include:
 - Email: garyday216@gmail.com
 - GitHub Issues: [github.com/adamday75/ai-optimizer-app/issues](https://github.com/adamday75/ai-optimizer-app/issues)
 - Landing page: https://ai-optimizer.org
+- Install guide: https://ai-optimizer.org/install
 
 ---
 

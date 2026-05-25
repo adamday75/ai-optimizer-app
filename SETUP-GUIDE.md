@@ -282,7 +282,9 @@ curl http://localhost:3000/health
 
 - **GitHub:** https://github.com/adamday75/ai-optimizer-app
 - **Releases:** https://github.com/adamday75/ai-optimizer-app/releases
-- **License:** Purchase at https://ai-optimizer-landing.vercel.app
+- **Site:** https://ai-optimizer.org
+- **Install Guide:** https://ai-optimizer.org/install
+- **License:** Purchase at https://ai-optimizer.org
 
 ---
 
