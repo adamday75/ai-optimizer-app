@@ -106,7 +106,7 @@ async function startServer(port = 3000, settings = {}) {
   logToFile(`🤖 Active provider configured: ${settings.provider || 'openai'}`);
 
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Apply license validation middleware to all routes
   app.use(requireValidLicense);
