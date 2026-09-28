@@ -12,7 +12,7 @@ if (fs.existsSync(keyPath)) {
   const keys = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
   API_KEY = keys.apiKey || '';
 }
-if (!API_KEY || API_KEY === 'sk-proj-YOUR-OPENAI-API-KEY-HERE') {
+if (!API_KEY) {
   console.error('⚠️  No API key found! Add your key to api-key.json');
   process.exit(1);
 }
